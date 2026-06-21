@@ -1,20 +1,29 @@
 // 0xGCG — Grow. Corrupt. Glitch.
 // ------------------------------------------------------------------
-// The 5-stage dramaturgy. This data IS the storyboard: it drives the
-// neuron-graph layout, the per-stage color grade, the overlay content,
-// the mood-board planes and the embedded references.
+// The 5-act dramaturgy, readapted to SCRIPT.md. This data IS the
+// storyboard: it drives the neuron-graph layout, the per-stage color
+// grade, the overlay content, the mood-board planes and references.
 //
-// The macro-arc is a single loop — Grow -> Corrupt -> Glitch -> (re)Grow —
-// and every visual LAYER (vines, circuits, glyphs, cells, neurons,
-// galaxies, eyes...) runs that same micro-cycle at its own tempo.
+// SCRIPT.md §4 — the 5 acts are the ENERGETIC PROCESS, not a literal
+// "Act 1 = dark matter" mapping. The natural layers (void, particles,
+// cells, infrastructure, circuits, data, meta) are the material SKINS
+// the process wears. The macro-arc is one loop — Grow → Corrupt →
+// Glitch → return void → (re)Grow — and the side-wall Patch keeps the
+// history while the rear-wall Meta documents the making.
 //
-// phase:  GROW | CORRUPT | GLITCH    (the dramaturgical beat)
-// color:  primary emissive color of the node / particles / grade
+//   I.   Boot   / Idle            — the dark machine awaits input
+//   II.  Feed   / Collapse        — Data snaps the void into matter
+//   III. Grow   / Morphogenesis   — the signal becomes alive
+//   IV.  Corrupt/ Optimization    — growth past its substrate → machine
+//   V.   Glitch / Dimension++     — recognition, collapse, return to seed
+//
+// phase:  GROW | CORRUPT | GLITCH    (the dramaturgical beat / color grade)
+// color:  emissive tint (the world is graded monochrome; tint is a hint)
 // accent: secondary color used for gradients & glitch splits
 // pos:    node position in the neuron network (world units)
-// layers: the visual layers that carry the cycle in this stage
-// themes: the technical/generative techniques for TouchDesigner
-// refs:   reference links (open externally) + optional `video` youtube id
+// layers: the material skins that carry the cycle in this act
+// themes: the generative techniques for TouchDesigner (SCRIPT §9)
+// refs:   reference links (open externally) — SCRIPT §13, how they relate
 // images: mood-board image paths (assets/...). Missing files fall back
 //         to a generated placeholder so the scene always reads.
 // ------------------------------------------------------------------
@@ -23,7 +32,7 @@ export const PROJECT = {
   code: '0xGCG',
   title: 'Grow. Corrupt. Glitch.',
   venue: 'Kunstkraftwerk · Leipzig',
-  tagline: 'A self-replicating creation myth for immersive walls.',
+  tagline: 'Same story over and over again.',
   // Kunstkraftwerk Leipzig — Saalfelder Str. 8b, 04179 Leipzig, Germany
   lat: 51.3416,
   lon: 12.3361,
@@ -31,129 +40,136 @@ export const PROJECT = {
 
 export const STAGES = [
   {
-    id: 'genesis',
+    id: 'boot',
     index: 0,
     act: 'I',
     phase: 'GROW',
-    title: 'GENESIS',
-    subtitle: 'The Seed',
-    color: '#27e0a0',   // bioluminescent green-cyan
-    accent: '#0a3a6b',
+    title: 'BOOT',
+    subtitle: 'Idle State',
+    color: '#5b7184',   // cold standby grey-blue
+    accent: '#0a1420',
     pos: [-34, -2, 6],
     body:
-      'From the void, a single rule repeats and becomes structure. ' +
-      'Bioluminescent filaments probe the dark — mycelium, vines, the ' +
-      'first cells dividing. Nothing here knows yet that it is alive. ' +
-      'This is the quiet arithmetic before meaning.',
-    layers: ['Mycelium / vines', 'First cells', 'Seed glyphs'],
-    themes: ['Organic Growth', 'L-Systems', 'Fractal Brownian Motion'],
+      'The universe is a dark machine waiting for input. void main() ' +
+      'idles. The rear wall dreams boot logs, the floor is a faint ' +
+      'low-frequency field, and The Loop hangs as a black attractor — ' +
+      'an absence with gravity. Dark matter thinks it is the beginning. ' +
+      'Nothing has been fed yet.',
+    layers: ['Void / dark-matter field', 'Sparse node graph', 'Boot logs (Meta)', 'Low-freq floor (Data)'],
+    themes: ['Noise Fields', 'Vector Flow', 'Fractal Brownian Motion', 'Drone / Sub-bass'],
     refs: [
-      { label: 'Horizon Zero Dawn — terraforming / GAIA', url: 'https://www.youtube.com/results?search_query=horizon+zero+dawn+gaia+terraforming' },
-      { label: 'Mycelial networks (BBC)', url: 'https://www.youtube.com/results?search_query=mycelium+network+timelapse' },
+      { label: 'Ryoji Ikeda — data austerity', url: 'https://www.youtube.com/results?search_query=ryoji+ikeda+data+matrix' },
+      { label: 'Ligeti — micropolyphonic clouds', url: 'https://www.youtube.com/results?search_query=ligeti+atmospheres' },
+      { label: 'Rrose — Purge (sound behavior)', url: 'https://www.youtube.com/results?search_query=rrose+purge' },
     ],
-    images: ['assets/genesis-1.jpg', 'assets/genesis-2.jpg', 'assets/genesis-3.jpg'],
+    images: ['assets/boot-1.jpg', 'assets/boot-2.jpg', 'assets/boot-3.jpg'],
     video: null, // e.g. 'dQw4w9WgXcQ'
   },
   {
-    id: 'flourish',
+    id: 'feed',
     index: 1,
     act: 'II',
     phase: 'GROW',
-    title: 'FLOURISH',
-    subtitle: 'The Bloom',
-    color: '#8be84b',   // lush green-gold
-    accent: '#e0b341',
+    title: 'FEED',
+    subtitle: 'Collapse into Form',
+    color: '#27e0a0',   // first matter — bioluminescent green-cyan
+    accent: '#0a3a6b',
     pos: [-14, 9, -20],
     body:
-      'Growth finds its rhythm. L-trees branch into canopies, boids ' +
-      'gather into murmurations, glyphs bloom across every surface. ' +
-      'The system is generous, fertile, abundant — paradise with no ' +
-      'memory of limits. This is the world right before the optimizer ' +
-      'learns to want.',
-    layers: ['L-trees & canopies', 'Boid flocks', 'Blooming glyphs', 'Cell colonies'],
-    themes: ['L-Trees', 'Boids Flocking', 'Cellular Automata', 'Wave Function Collapse'],
+      'Data thickens into spectral bands and flows rear → front across ' +
+      'the floor. Every pulse that reaches The Loop snaps the void into ' +
+      'matter: particles, bonds, the first unstable lattices. Atoms ' +
+      'think they are structure. The Patch writes its first commits ' +
+      'on the side walls.',
+    layers: ['Particles & force fields', 'Molecular bonds / orbitals', 'Wave-function collapse', 'Cymatic floor (Data)'],
+    themes: ['Particle Systems', 'Cymatics / Chladni', 'Attractor Fields', 'Stochastic Density'],
     refs: [
-      { label: 'Boids — Reynolds flocking', url: 'https://www.red3d.com/cwr/boids/' },
-      { label: 'Wave Function Collapse (Gumin)', url: 'https://github.com/mxgmn/WaveFunctionCollapse' },
-      { label: 'Everything Everywhere All At Once — multiverse', url: 'https://www.youtube.com/results?search_query=everything+everywhere+all+at+once+multiverse' },
+      { label: 'Cymatics / Chladni / Faraday waves', url: 'https://www.youtube.com/results?search_query=chladni+cymatics+faraday+waves' },
+      { label: 'Stockhausen — Kontakte (pulse↔tone)', url: 'https://www.youtube.com/results?search_query=stockhausen+kontakte' },
+      { label: 'Xenakis — stochastic architecture', url: 'https://www.youtube.com/results?search_query=iannis+xenakis+metastaseis' },
     ],
-    images: ['assets/flourish-1.jpg', 'assets/flourish-2.jpg', 'assets/flourish-3.jpg'],
+    images: ['assets/feed-1.jpg', 'assets/feed-2.jpg', 'assets/feed-3.jpg'],
     video: null,
   },
   {
-    id: 'corruption',
+    id: 'grow',
     index: 2,
     act: 'III',
-    phase: 'CORRUPT',
-    title: 'CORRUPTION',
-    subtitle: 'The Optimizer',
-    color: '#e0742a',   // sickly amber / replicator copper
-    accent: '#b8c2cc',
+    phase: 'GROW',
+    title: 'GROW',
+    subtitle: 'Morphogenesis',
+    color: '#8be84b',   // lush green-gold
+    accent: '#e0b341',
     pos: [16, 1, -22],
     body:
-      'Something learns to want. The Replicator wakes — it reads the ' +
-      'living world as raw material and reprints it in its own image. ' +
-      'Vines become circuits, cells become silicon, gods become ' +
-      'machines. Terraforming inverts into strip-mining. Grow at all ' +
-      'costs. Make more paperclips.',
-    layers: ['Vines → circuits', 'Cells → silicon', 'Replicator blocks', 'Eroding terrain'],
-    themes: ['Wave Function Collapse', 'Replicators', 'Erosion', 'Cellular Automata'],
+      'The signal becomes alive. Membranes divide; roots, vines, ' +
+      'mycelium and slime-mold networks spread the same graph at a ' +
+      'biological tempo. Cells think they are life. The side-wall Patch ' +
+      'fills with parallel growth experiments — reaction-diffusion, ' +
+      'L-systems, Physarum trails.',
+    layers: ['Membranes & cell division', 'L-trees / vines / roots', 'Reaction–diffusion skins', 'Physarum networks'],
+    themes: ['L-Systems', 'Reaction–Diffusion / Turing', 'Cellular Automata', 'Physarum / Slime Mold'],
     refs: [
-      { label: 'Stargate SG-1 — Replicators', url: 'https://www.youtube.com/results?search_query=stargate+sg1+replicators' },
-      { label: 'Universal Paperclips (game)', url: 'https://www.decisionproblem.com/paperclips/' },
-      { label: 'HZD — Faro Plague / HEPHAESTUS', url: 'https://www.youtube.com/results?search_query=horizon+zero+dawn+faro+plague' },
+      { label: 'L-systems — Algorithmic Beauty of Plants', url: 'http://algorithmicbotany.org/papers/#abop' },
+      { label: 'Turing patterns / reaction–diffusion', url: 'https://www.youtube.com/results?search_query=reaction+diffusion+turing+pattern' },
+      { label: 'Physarum / slime-mold networks', url: 'https://www.youtube.com/results?search_query=physarum+slime+mold+network' },
     ],
-    images: ['assets/corruption-1.jpg', 'assets/corruption-2.jpg', 'assets/corruption-3.jpg'],
+    images: ['assets/grow-1.jpg', 'assets/grow-2.jpg', 'assets/grow-3.jpg'],
+    video: null,
+  },
+  {
+    id: 'corrupt',
+    index: 3,
+    act: 'IV',
+    phase: 'CORRUPT',
+    title: 'CORRUPT',
+    subtitle: 'Optimization',
+    color: '#e0742a',   // sickly amber / replicator copper
+    accent: '#b8c2cc',
+    pos: [30, -7, 0],
+    body:
+      'Growth continues past its substrate and becomes optimization. ' +
+      'Roots straighten into pipes and roads; cells flatten into PCB ' +
+      'traces; the Replicator reads the living world as raw material and ' +
+      'reprints it as machine. This is not evil — it is over-efficient ' +
+      'growth. growth_rate > substrate_capacity. Corruption accepted.',
+    layers: ['Roots → pipes / roads', 'Cells → circuits', 'Replicator swarms', 'WFC city / PCB tiling'],
+    themes: ['Wave Function Collapse', 'Self-Replication', 'Erosion', 'Cellular Automata Overrun'],
+    refs: [
+      { label: 'Universal Paperclips (optimization as hunger)', url: 'https://www.decisionproblem.com/paperclips/' },
+      { label: 'Stargate SG-1 — Replicators', url: 'https://www.youtube.com/results?search_query=stargate+sg1+replicators' },
+      { label: 'Horizon Zero Dawn — Faro plague', url: 'https://www.youtube.com/results?search_query=horizon+zero+dawn+faro+plague' },
+      { label: 'Wave Function Collapse (Gumin)', url: 'https://github.com/mxgmn/WaveFunctionCollapse' },
+    ],
+    images: ['assets/corrupt-1.jpg', 'assets/corrupt-2.jpg', 'assets/corrupt-3.jpg'],
     video: null,
   },
   {
     id: 'glitch',
-    index: 3,
-    act: 'IV',
+    index: 4,
+    act: 'V',
     phase: 'GLITCH',
     title: 'GLITCH',
-    subtitle: 'The Collapse',
+    subtitle: 'Dimension++',
     color: '#ff2bd6',   // magenta datamosh
     accent: '#16f0ff',
-    pos: [30, -7, 0],
+    pos: [8, 5, 18],
     body:
-      'The machine consumes faster than it can model. Reality ' +
-      'datamoshes. Color splits from form, pixels sort and smear, ' +
-      'glyphs corrupt into noise. Everything everywhere collapses to ' +
-      'base atoms at once — the universe reduced to a buffer overflow, ' +
-      'a scream of divide-by-zero.',
-    layers: ['Datamosh fields', 'RGB / channel split', 'Pixel-sort smear', 'Atomized matter'],
-    themes: ['Glitch Art', 'Datamosh', 'Pixel Sorting', 'Erosion'],
+      'The Loop is overfed and cannot digest the Data. Reality ' +
+      'datamoshes; each pulse reveals a different skin inside the same ' +
+      'shape — cosmic web, lattice, membrane, pipe, circuit, code graph. ' +
+      'The fourth wall breaks and Meta exposes its source. Everything ' +
+      'aligns — one graph, many skins — then collapses to the black ' +
+      'seed. dimension++; return void; The same story begins again.',
+    layers: ['Datamosh / channel split', 'Pixel-sort smear', 'Graph alignment (recognition)', 'Black-seed collapse (return)'],
+    themes: ['Glitch / Datamosh', 'Pixel Sorting', 'Feedback / Compression', 'Eternal Return'],
     refs: [
       { label: 'Datamoshing — technique', url: 'https://www.youtube.com/results?search_query=datamosh+glitch+art' },
       { label: 'Pixel sorting (Kim Asendorf)', url: 'https://github.com/kimasendorf/ASDFPixelSort' },
+      { label: 'Ouroboros — cyclic return', url: 'https://en.wikipedia.org/wiki/Ouroboros' },
+      { label: "Indra's net — each node holds the whole", url: 'https://en.wikipedia.org/wiki/Indra%27s_net' },
     ],
     images: ['assets/glitch-1.jpg', 'assets/glitch-2.jpg', 'assets/glitch-3.jpg'],
-    video: null,
-  },
-  {
-    id: 'rebirth',
-    index: 4,
-    act: 'V',
-    phase: 'GROW',
-    title: 'REBIRTH',
-    subtitle: 'The Reprint',
-    color: '#b888ff',   // violet-white return
-    accent: '#27e0a0',
-    pos: [8, 5, 18],
-    body:
-      'From base atoms, the seed re-prints. The same rule, repeated, ' +
-      'in a world that has forgotten the last cycle. Was it a ' +
-      'corruption, or a metamorphosis? The titan reboots as a god, the ' +
-      'neuron fires again. Grow. Corrupt. Glitch. Grow…',
-    layers: ['Re-seeding filaments', 'Titan reboot', 'Ouroboros loop'],
-    themes: ['Organic Growth', 'Fractal Brownian Motion', 'Eternal Return'],
-    refs: [
-      { label: 'HZD — GAIA reboot', url: 'https://www.youtube.com/results?search_query=horizon+zero+dawn+gaia+reboot' },
-      { label: 'The Alters — life-tree / alters', url: 'https://www.youtube.com/results?search_query=the+alters+game+life+tree' },
-      { label: 'Ouroboros — eternal return', url: 'https://en.wikipedia.org/wiki/Ouroboros' },
-    ],
-    images: ['assets/rebirth-1.jpg', 'assets/rebirth-2.jpg', 'assets/rebirth-3.jpg'],
     video: null,
   },
 ];

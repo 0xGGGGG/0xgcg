@@ -14,11 +14,16 @@ micro-cycle at its own tempo.
 
 | Act | Stage | Phase | Carries |
 |----|-----------|---------|---------|
-| I | GENESIS | GROW | seed, mycelium, first cells · L-systems, fBm |
-| II | FLOURISH | GROW | L-trees, boids, glyph bloom · WFC, cellular automata |
-| III | CORRUPTION | CORRUPT | the Optimizer/Replicator reprints life as machine · erosion |
-| IV | GLITCH | GLITCH | datamosh, RGB split, pixel sort, atomization |
-| V | REBIRTH | GROW | the seed re-prints — Ouroboros back to Act I |
+| I | BOOT | GROW | the dark machine idles · void main(), dark-matter field, boot logs |
+| II | FEED | GROW | Data snaps the void into matter · particles, bonds, cymatics |
+| III | GROW | GROW | the signal becomes alive · cells, roots, reaction-diffusion, Physarum |
+| IV | CORRUPT | CORRUPT | growth past its substrate → machine · WFC, replicators, circuits |
+| V | GLITCH | GLITCH | recognition, collapse, return to seed · datamosh, one-graph alignment |
+
+The 5 acts are the *energetic process*; the natural layers (void, cells,
+infrastructure, circuits, data, meta) are the material *skins* it wears —
+**one graph, many skins**. The loop edge GLITCH → BOOT is the Ouroboros
+return. See [`SCRIPT.md`](SCRIPT.md) for the full surface-by-surface script.
 
 Inspirations: Stargate SG-1 Replicators · Horizon Zero Dawn terraforming
 & titan-AIs · Universal Paperclips · Everything Everywhere All At Once ·
