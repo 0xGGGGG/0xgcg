@@ -63,7 +63,8 @@ CDN, so you need network access on first load.
 
 ## Routes
 
-- `/` and `/core` → the Core view · `/layout` → the Layout view.
+- `/` → the **intro** (SCRIPT §1 title boot) with doors to Core & Layout.
+- `/core` → the Core view · `/layout` → the Layout view.
 - The view switcher updates the URL; every trigger re-homes the viewpoint.
 
 ## Two views
@@ -127,5 +128,8 @@ src/core/cameraRig    artistic flight between nodes
 src/core/postfx       UnrealBloom composer
 src/core/assets       mood-board planes + OBJ/FBX loading
 src/ui/overlay        per-stage DOM panel
+src/ui/intro          §1 0xGCG slot-machine title page (the index /)
+src/ui/cosmicAddress  zoomable venue→universe "you are here" overlay
 src/layout/roomView   ## Layout: venue FBX blueprint + gizmo + surface markers
+serve.py              static dev server with SPA fallback (routes)
 ```

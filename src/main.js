@@ -13,6 +13,7 @@ import { Portal } from './ui/portal.js';
 import { Markers } from './ui/markers.js';
 import { createRoomView } from './layout/roomView.js';
 import { CosmicAddress, initHeaderAddress } from './ui/cosmicAddress.js';
+import { Intro } from './ui/intro.js';
 
 const app = document.getElementById('app');
 
@@ -98,11 +99,17 @@ function setAuto(on) {
 
 // ---- view mode: 'core' (neuron storyboard) | 'layout' (room plan) ----
 let mode = 'core';
-let room = null; // lazily created RoomView (loads the FBX on first open)
+let room = null;  // lazily created RoomView (loads the FBX on first open)
+let intro = null; // the §1 title page (index)
 const navBtns = [...document.querySelectorAll('#view-nav button')];
 
-// path <-> mode routing.  /  /core -> core ,  /layout -> layout
-const pathToMode = (p) => (p.replace(/\/+$/, '') === '/layout' ? 'layout' : 'core');
+// path <-> mode routing.  / -> intro (title) , /core -> core , /layout -> layout
+const pathToMode = (p) => {
+  const x = p.replace(/\/+$/, '');
+  if (x === '/layout') return 'layout';
+  if (x === '/core') return 'core';
+  return 'intro';
+};
 
 // Reset the Core view to its original opening framing (intro glide to GENESIS).
 function resetCore() {
@@ -118,20 +125,28 @@ function resetCore() {
 function setMode(m, { push = true, reset = true } = {}) {
   mode = m;
   document.body.classList.toggle('mode-layout', m === 'layout');
+  document.body.classList.toggle('mode-intro', m === 'intro');
   navBtns.forEach((b) => b.classList.toggle('on', b.dataset.view === m));
-  if (m === 'layout') {
+  if (m === 'intro') {
+    setAuto(false);
+    controls.enabled = false;
+    if (room) room.deactivate();
+    if (intro) intro.show();
+  } else if (m === 'layout') {
+    if (intro) intro.hide();
     setAuto(false);
     controls.enabled = false;
     if (!room) room = createRoomView(renderer);
     room.activate();
     if (reset) room.frameRoom(); // no-op until the FBX has loaded, then re-homes
-  } else {
+  } else { // core
+    if (intro) intro.hide();
     if (room) room.deactivate();
     controls.enabled = true;
     if (reset) resetCore();
   }
   if (push) {
-    const path = m === 'layout' ? '/layout' : '/core';
+    const path = m === 'layout' ? '/layout' : m === 'core' ? '/core' : '/';
     if (location.pathname !== path) history.pushState({ mode: m }, '', path);
   }
 }
@@ -144,6 +159,9 @@ addEventListener('popstate', () => setMode(pathToMode(location.pathname), { push
 initHeaderAddress();
 const cosmos = new CosmicAddress();
 document.getElementById('addr-trigger').addEventListener('click', () => cosmos.toggle());
+
+// ---- intro / title page (the index `/`) ------------------------------
+intro = new Intro({ onEnter: (m) => setMode(m) });
 
 // ---- raycast: click to fly, hover to open the storyteller portal -----
 const ray = new THREE.Raycaster();
@@ -217,6 +235,11 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 
 // ---- keyboard ---------------------------------------------------------
 addEventListener('keydown', (e) => {
+  if (mode === 'intro') {
+    if (e.key === 'Enter' || e.key === 'c') { setMode('core'); return; }
+    if (e.key === 'l') { setMode('layout'); return; }
+    return; // intro owns the keyboard until a door is chosen
+  }
   if (e.key === 'Escape') { cosmos.hide(); return; }
   if (e.key.toLowerCase() === 'a') { cosmos.toggle(); return; }
   if (cosmos.visible && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
@@ -277,6 +300,15 @@ const clock = new THREE.Clock();
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
+
+  // ---- Intro mode: the title page is pure DOM; blank the canvas behind it
+  if (mode === 'intro') {
+    renderer.setRenderTarget(null);
+    renderer.autoClear = true;
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    renderer.clear();
+    return;
+  }
 
   // ---- Layout mode: render the room plan + gizmo, skip the Core world ----
   if (mode === 'layout') {

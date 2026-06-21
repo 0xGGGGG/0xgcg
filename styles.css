@@ -311,3 +311,71 @@ body.mode-layout #layout-loading{display:block}
 @media (max-width:760px){
   .czt-scale{display:none}
 }
+
+/* ========================================================================
+   §1 Intro / title page (the index)
+   ===================================================================== */
+body.mode-intro #ui,
+body.mode-intro #VRButton{display:none!important}
+#intro{position:fixed;inset:0;z-index:50;background:#000;opacity:0;
+  pointer-events:none;transition:opacity .5s;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+#intro.show{opacity:1;pointer-events:auto}
+
+/* faint scanlines + vignette */
+.in-scan{position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);
+  mix-blend-mode:screen;
+  -webkit-mask-image:radial-gradient(ellipse at center,#000 55%,transparent 100%);
+  mask-image:radial-gradient(ellipse at center,#000 55%,transparent 100%)}
+
+.in-wrap{position:relative;z-index:2;display:flex;flex-direction:column;
+  align-items:center;gap:16px;padding:24px;text-align:center;width:min(820px,92vw);
+  transform:translateY(-10px)}
+.in-sigil{color:#3a3a3a;font-size:10px;line-height:1.25;letter-spacing:.04em;
+  white-space:pre;opacity:.7;margin-bottom:2px}
+
+/* the slot title: 0x fixed + GCG reels */
+.in-title{font-weight:700;font-size:clamp(56px,13vw,150px);line-height:1;
+  letter-spacing:.04em;display:flex;align-items:center;justify-content:center}
+.in-title .in-fixed{color:#5a5a5a}
+.in-title .in-reel{color:#cdcdcd;display:inline-block;min-width:.62em;
+  text-align:center;transition:color .15s,text-shadow .15s}
+.in-title .in-reel.hot{color:#fff}
+.in-title .in-reel.locked{color:#fff;text-shadow:0 0 30px rgba(255,255,255,.55)}
+
+.in-boot{color:#5a6a5a;font-size:11px;line-height:1.7;letter-spacing:.06em;
+  text-align:left;white-space:pre;min-height:80px}
+.in-boot .in-seed{color:#9fe9c0}
+.in-cursor{animation:in-blink 1s steps(1) infinite}
+@keyframes in-blink{50%{opacity:0}}
+
+/* reveal block (after the reels settle) */
+.in-reveal{opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .8s .15s,transform .8s .15s;display:flex;flex-direction:column;
+  align-items:center;gap:10px}
+#intro.resolved .in-reveal{opacity:1;transform:none;pointer-events:auto}
+#intro.resolved .in-boot{opacity:.35;transition:opacity .8s}
+.in-reveal h1{font-size:clamp(22px,4vw,34px);letter-spacing:.04em;color:#fff;
+  text-shadow:0 0 26px rgba(255,255,255,.25)}
+.in-tag{color:#bdbdbd;font-size:14px;letter-spacing:.16em}
+.in-credit{color:#6f6f6f;font-size:12px;letter-spacing:.06em;max-width:560px}
+
+.in-doors{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+.in-door{font:inherit;cursor:pointer;color:#cfcfcf;letter-spacing:.12em;
+  font-size:14px;padding:14px 22px;border:1px solid rgba(255,255,255,.2);
+  border-radius:4px;background:rgba(255,255,255,.03);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:all .2s}
+.in-door b{color:#fff;letter-spacing:.22em}
+.in-door small{color:#7a7a7a;font-size:10px;letter-spacing:.1em}
+.in-door:hover{border-color:#fff;background:rgba(255,255,255,.08);
+  box-shadow:0 0 26px rgba(255,255,255,.18);transform:translateY(-1px)}
+.in-hint{color:#5a5a5a;font-size:10px;letter-spacing:.14em;margin-top:6px}
+.in-hint kbd{color:#cfcfcf;border:1px solid rgba(255,255,255,.2);border-radius:3px;
+  padding:1px 5px;font:inherit;font-size:10px}
+
+.in-foot{position:absolute;left:0;right:0;bottom:0;display:flex;
+  justify-content:space-between;padding:18px 24px;color:#5a5a5a;font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase}
+.in-foot .in-date{font-variant-numeric:tabular-nums;text-transform:none}
