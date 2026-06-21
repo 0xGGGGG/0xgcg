@@ -162,6 +162,8 @@ document.getElementById('addr-trigger').addEventListener('click', () => cosmos.t
 
 // ---- intro / title page (the index `/`) ------------------------------
 intro = new Intro({ onEnter: (m) => setMode(m) });
+// clicking the top-left 0xGCG brand returns to the index (replays the boot)
+document.querySelector('#topbar .brand').addEventListener('click', () => setMode('intro'));
 
 // ---- raycast: click to fly, hover to open the storyteller portal -----
 const ray = new THREE.Raycaster();
