@@ -1,4 +1,5 @@
 import { STAGES, PROJECT } from '../config/stages.js';
+import { buildSection } from './sectionView.js';
 
 const MONO_UI = '#d6d6d6'; // neutral grey accent for the black & white theme
 
@@ -76,6 +77,7 @@ export class Overlay {
       ${s.surfaces ? `
       <div class="surfaces">
         <h3>On the four surfaces</h3>
+        <div class="sf-section-mount"></div>
         <ul>
           <li class="sf sf-meta"><b>Meta</b><span>${s.surfaces.meta}</span></li>
           <li class="sf sf-data"><b>Data</b><span>${s.surfaces.data}</span></li>
@@ -93,6 +95,17 @@ export class Overlay {
         <h3>References</h3>
         ${s.refs.map((r) => `<a href="${r.url}" target="_blank" rel="noopener">↗ ${r.label}</a>`).join('')}
       </div>`;
+    // interactive section drawing keyed to the surface rows
+    const mount = this.panel.querySelector('.sf-section-mount');
+    if (mount) {
+      const rows = (surf) => this.panel.querySelectorAll(`.surfaces .sf-${surf}`);
+      mount.appendChild(buildSection({
+        interactive: true,
+        onEnter: (surf) => rows(surf).forEach((el) => el.classList.add('hot')),
+        onLeave: (surf) => rows(surf).forEach((el) => el.classList.remove('hot')),
+      }));
+    }
+
     this.panel.style.setProperty('--accent', MONO_UI);
     this.panel.classList.add('show');
   }

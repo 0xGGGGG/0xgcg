@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
+import { buildSection } from '../ui/sectionView.js';
 
 // ---------------------------------------------------------------------------
 // ## Layout — a navigable, holographic 3D plan of the venue (the
@@ -125,6 +126,42 @@ export function createRoomView(renderer) {
   const hud = document.createElement('div');
   hud.id = 'loop-hud';
   document.body.appendChild(hud);
+
+  // ---- section-drawing overlay + toggle (near the gizmo) -------------
+  const secToggle = document.createElement('button');
+  secToggle.id = 'section-toggle';
+  secToggle.title = 'Toggle the annotated cross-section';
+  secToggle.innerHTML = '▣ section';
+  document.body.appendChild(secToggle);
+
+  const secOverlay = document.createElement('div');
+  secOverlay.id = 'section-overlay';
+  document.body.appendChild(secOverlay);
+  let secBuilt = false;
+
+  function toggleSection(force) {
+    const show = force !== undefined ? force : !secOverlay.classList.contains('show');
+    if (show && !secBuilt) {
+      const panel = document.createElement('div');
+      panel.className = 'so-panel';
+      panel.innerHTML = `<div class="so-head"><span>venue cross-section · click a surface</span><button class="so-close">✕</button></div>`;
+      panel.querySelector('.so-close').addEventListener('click', () => toggleSection(false));
+      panel.appendChild(buildSection({
+        interactive: true,
+        onSelect: (surf) => {
+          const mesh = { meta: 'BackWall', data: 'Floor', loop: 'FrontWall', patch: 'LeftWall' }[surf];
+          const k = surfaces.indexOf(surfBy(mesh));
+          if (k >= 0) pin(k); // pauses the loop, flies the camera, opens the card
+          toggleSection(false);
+        },
+      }));
+      secOverlay.appendChild(panel);
+      secBuilt = true;
+    }
+    secOverlay.classList.toggle('show', show);
+    secToggle.classList.toggle('on', show);
+  }
+  secToggle.addEventListener('click', () => toggleSection());
 
   // ---- transient state ----------------------------------------------
   const surfaces = []; // { def, mesh, center, normal, marker, fill, edges, baseEdgeOpacity }
@@ -486,6 +523,7 @@ export function createRoomView(renderer) {
     controls.enabled = true;
     markerWrap.style.display = 'block';
     hud.style.display = 'flex';
+    secToggle.style.display = 'block';
     cyc.on = true;
     if (surfaces.length) cycleEnter(cyc.i);
     onResize();
@@ -495,6 +533,8 @@ export function createRoomView(renderer) {
     controls.enabled = false;
     markerWrap.style.display = 'none';
     hud.style.display = 'none';
+    secToggle.style.display = 'none';
+    toggleSection(false);
     hideCard();
   }
 

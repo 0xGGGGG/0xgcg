@@ -14,6 +14,7 @@ import { Markers } from './ui/markers.js';
 import { createRoomView } from './layout/roomView.js';
 import { CosmicAddress, initHeaderAddress } from './ui/cosmicAddress.js';
 import { Intro } from './ui/intro.js';
+import { loadSection } from './ui/sectionView.js';
 
 const app = document.getElementById('app');
 
@@ -159,6 +160,9 @@ addEventListener('popstate', () => setMode(pathToMode(location.pathname), { push
 initHeaderAddress();
 const cosmos = new CosmicAddress();
 document.getElementById('addr-trigger').addEventListener('click', () => cosmos.toggle());
+
+// warm the keyed venue section drawing (used by Core cards + Layout overlay)
+loadSection();
 
 // ---- intro / title page (the index `/`) ------------------------------
 intro = new Intro({ onEnter: (m) => setMode(m) });
