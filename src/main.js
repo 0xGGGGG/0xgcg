@@ -342,14 +342,16 @@ function frame() {
     return;
   }
 
-  if (auto) {
+  // dwell only counts once the camera has arrived; while flying the playhead
+  // holds at the segment start (parity with Layout — no restart-on-arrival jump)
+  if (auto && !rig.anim) {
     autoTimer += dt;
-    if (!rig.anim && autoTimer > DWELL) {
+    if (autoTimer > DWELL) {
       autoTimer = 0;
       go((active + 1) % STAGES.length);
     }
   }
-  corePlayer.setProgress(active, auto ? Math.min(1, autoTimer / DWELL) : (rig.anim ? 0 : 1));
+  corePlayer.setProgress(active, rig.anim ? 0 : Math.min(1, autoTimer / DWELL));
 
   rig.update(dt, t);
   updateNodes(t);
