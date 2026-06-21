@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- routes like /layout resolve relative assets (styles, src, assets/) from root -->
+  <base href="/" />
   <title>0xGCG — Grow. Corrupt. Glitch.</title>
   <link rel="stylesheet" href="styles.css" />
   <script type="importmap">
@@ -23,7 +25,14 @@
         <span id="proj-code">0xGCG</span>
         <span id="proj-title">Grow. Corrupt. Glitch.</span>
       </div>
-      <div id="proj-venue">KraftKunstWerk · Leipzig</div>
+      <nav id="view-nav">
+        <button data-view="core" class="on">Core</button>
+        <button data-view="layout">Layout</button>
+      </nav>
+      <button id="addr-trigger" title="Open the cosmic address (A)">
+        <span class="av-venue" id="proj-venue">Kunstkraftwerk · Leipzig</span>
+        <span class="av-sub"><span id="av-coords">—</span> · <span id="av-date">—</span></span>
+      </button>
     </header>
 
     <section id="panel"></section>
@@ -34,6 +43,19 @@
       <button id="next" title="Next (→)">next ›</button>
       <div id="dots"></div>
       <div class="hint">drag to look · click a node · ←/→ stages · space autoplay · H hide UI</div>
+    </footer>
+
+    <!-- Layout mode chrome -->
+    <div id="layout-loading">loading room model…</div>
+    <footer id="layout-bar">
+      <button id="layout-frame" title="Frame the whole room">⤢ frame all</button>
+      <div class="layout-legend">
+        <span class="lg lg-loop">The Loop · front</span>
+        <span class="lg lg-data">Data · floor</span>
+        <span class="lg lg-meta">Meta · rear</span>
+        <span class="lg lg-patch">The Patch · sides</span>
+      </div>
+      <div class="hint">drag to orbit · scroll zoom · click a surface · gizmo (↘) snaps axis</div>
     </footer>
   </div>
 

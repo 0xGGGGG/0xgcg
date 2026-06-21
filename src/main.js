@@ -11,11 +11,15 @@ import { buildMoodPlanes, loadModels } from './core/assets.js';
 import { Overlay } from './ui/overlay.js';
 import { Portal } from './ui/portal.js';
 import { Markers } from './ui/markers.js';
+import { createRoomView } from './layout/roomView.js';
+import { CosmicAddress, initHeaderAddress } from './ui/cosmicAddress.js';
 
 const app = document.getElementById('app');
 
 // ---- renderer / scene / camera ---------------------------------------
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+// preserveDrawingBuffer lets us grab canvas snapshots (toDataURL) for the
+// Meta wall / documentation captures; negligible cost for a storyboard tool.
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x000000, 1);
@@ -92,6 +96,55 @@ function setAuto(on) {
   overlay.setAuto(on);
 }
 
+// ---- view mode: 'core' (neuron storyboard) | 'layout' (room plan) ----
+let mode = 'core';
+let room = null; // lazily created RoomView (loads the FBX on first open)
+const navBtns = [...document.querySelectorAll('#view-nav button')];
+
+// path <-> mode routing.  /  /core -> core ,  /layout -> layout
+const pathToMode = (p) => (p.replace(/\/+$/, '') === '/layout' ? 'layout' : 'core');
+
+// Reset the Core view to its original opening framing (intro glide to GENESIS).
+function resetCore() {
+  setAuto(false);
+  active = 0;
+  camera.position.set(-34, 10, 46);
+  rig.current = -1;        // force the rig to re-fly even if already at stage 0
+  rig.goTo(0, 4.5);
+}
+
+// `push`  — write the URL (skip on initial load / popstate)
+// `reset` — re-home the viewpoint (every trigger resets, even same-view clicks)
+function setMode(m, { push = true, reset = true } = {}) {
+  mode = m;
+  document.body.classList.toggle('mode-layout', m === 'layout');
+  navBtns.forEach((b) => b.classList.toggle('on', b.dataset.view === m));
+  if (m === 'layout') {
+    setAuto(false);
+    controls.enabled = false;
+    if (!room) room = createRoomView(renderer);
+    room.activate();
+    if (reset) room.frameRoom(); // no-op until the FBX has loaded, then re-homes
+  } else {
+    if (room) room.deactivate();
+    controls.enabled = true;
+    if (reset) resetCore();
+  }
+  if (push) {
+    const path = m === 'layout' ? '/layout' : '/core';
+    if (location.pathname !== path) history.pushState({ mode: m }, '', path);
+  }
+}
+navBtns.forEach((b) => b.addEventListener('click', () => setMode(b.dataset.view)));
+document.getElementById('layout-frame').addEventListener('click', () => room && room.frameRoom());
+// browser back / forward
+addEventListener('popstate', () => setMode(pathToMode(location.pathname), { push: false }));
+
+// ---- cosmic address (header trigger + `A` key) -----------------------
+initHeaderAddress();
+const cosmos = new CosmicAddress();
+document.getElementById('addr-trigger').addEventListener('click', () => cosmos.toggle());
+
 // ---- raycast: click to fly, hover to open the storyteller portal -----
 const ray = new THREE.Raycaster();
 const ptr = new THREE.Vector2();
@@ -132,11 +185,21 @@ function pick(e) {
 }
 
 renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (mode !== 'core') return;
   const i = pick(e);
   if (i >= 0) { setAuto(false); go(i); }
 });
 
+// gizmo axis snap (Layout) — ViewHelper consumes clicks in its corner
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (mode === 'layout' && room) room.handleGizmoClick(e);
+});
+
 renderer.domElement.addEventListener('pointermove', (e) => {
+  if (mode !== 'core') {
+    renderer.domElement.style.cursor = 'grab';
+    return;
+  }
   const i = pick(e);
   if (i >= 0) {
     if (i !== hovered) {
@@ -154,11 +217,21 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 
 // ---- keyboard ---------------------------------------------------------
 addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { cosmos.hide(); return; }
+  if (e.key.toLowerCase() === 'a') { cosmos.toggle(); return; }
+  if (cosmos.visible && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    e.preventDefault();
+    cosmos.goto(cosmos.focus + (e.key === 'ArrowUp' ? 1 : -1));
+    return;
+  }
+  if (e.key.toLowerCase() === 'h') { document.getElementById('ui').classList.toggle('hidden'); return; }
+  if (e.key === 'c') { setMode('core'); return; }
+  if (e.key === 'l') { setMode('layout'); return; }
+  if (mode !== 'core') return;
   if (e.key === 'ArrowRight') { setAuto(false); go((active + 1) % STAGES.length); }
   else if (e.key === 'ArrowLeft') { setAuto(false); go((active - 1 + STAGES.length) % STAGES.length); }
   else if (e.key === ' ') { e.preventDefault(); setAuto(!auto); }
   else if (e.key >= '1' && e.key <= '5') { setAuto(false); go(parseInt(e.key, 10) - 1); }
-  else if (e.key.toLowerCase() === 'h') { document.getElementById('ui').classList.toggle('hidden'); }
 });
 
 addEventListener('resize', () => {
@@ -166,6 +239,7 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+  if (room) room.onResize();
 });
 
 // ---- monochrome grade ------------------------------------------------
@@ -204,6 +278,24 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
+  // ---- Layout mode: render the room plan + gizmo, skip the Core world ----
+  if (mode === 'layout') {
+    if (room) {
+      room.update(dt);
+      // Clear ONCE manually, then keep autoClear off — otherwise the gizmo's
+      // internal render would glClear the whole color buffer (no scissor) and
+      // wipe the room, leaving only the corner gizmo.
+      renderer.setRenderTarget(null);
+      renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+      renderer.autoClear = false;
+      renderer.clear();
+      renderer.render(room.scene, room.camera);
+      room.renderGizmo();
+      room.updateMarkers();
+    }
+    return;
+  }
+
   if (auto) {
     autoTimer += dt;
     if (!rig.anim && autoTimer > DWELL) {
@@ -232,10 +324,9 @@ function frame() {
 }
 renderer.setAnimationLoop(frame);
 
-// start parked at GENESIS after a short intro glide
-camera.position.set(-34, 10, 46);
-rig.goTo(0, 4.5);
+// ---- boot: pick the view from the URL (/, /core -> core ; /layout -> layout)
 overlay.setAuto(false);
+setMode(pathToMode(location.pathname), { push: false });
 
 // ---- helpers ----------------------------------------------------------
 function buildDust() {

@@ -22,8 +22,11 @@
 export const PROJECT = {
   code: '0xGCG',
   title: 'Grow. Corrupt. Glitch.',
-  venue: 'KraftKunstWerk · Leipzig',
+  venue: 'Kunstkraftwerk · Leipzig',
   tagline: 'A self-replicating creation myth for immersive walls.',
+  // Kunstkraftwerk Leipzig — Saalfelder Str. 8b, 04179 Leipzig, Germany
+  lat: 51.3416,
+  lon: 12.3361,
 };
 
 export const STAGES = [

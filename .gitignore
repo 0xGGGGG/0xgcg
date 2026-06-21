@@ -21,6 +21,10 @@ dist/
 *.log
 assets/materials/logs/
 
+# ── Raw screen recordings (large; meta-wall source, kept local) ───
+assets/records/
+*.mov
+
 # ── Playwright / capture output (re-generatable) ──────────────────
 test-results/
 playwright-report/
