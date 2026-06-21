@@ -73,16 +73,16 @@ const rig = new CameraRig(camera, controls, graph.stageNodes);
 
 let auto = false;
 let autoTimer = 0;
-const DWELL = 13; // seconds parked at a node in auto mode
+const DWELL = 9; // seconds parked at a node before auto-advancing
 
 const overlay = new Overlay(document.getElementById('ui'));
 
 // shared timeline Player for the 5 acts (camera-follow on select)
 const corePlayer = new Player({
   steps: STAGES.map((s) => ({ key: s.id, label: s.title, sub: s.subtitle, color: s.color, dur: DWELL })),
-  onSelect: (i) => { setAuto(false); go(i); },
+  onSelect: (i) => go(i),          // keep autoplay running (parity with Layout)
   onToggle: (on) => setAuto(on),
-  playing: false,
+  playing: true,
 });
 corePlayer.mount(document.getElementById('player-mount'));
 
@@ -90,6 +90,7 @@ let active = 0;
 rig.onDepart = () => overlay.hide();
 rig.onArrive = (i) => {
   active = i;
+  autoTimer = 0;            // dwell starts on arrival, so the tour paces evenly
   overlay.show(i);
   corePlayer.setActive(i);
 };
@@ -119,9 +120,9 @@ const pathToMode = (p) => {
   return 'intro';
 };
 
-// Reset the Core view to its original opening framing (intro glide to GENESIS).
+// Reset the Core view to its opening framing, then autoplay the act tour.
 function resetCore() {
-  setAuto(false);
+  setAuto(true);
   active = 0;
   camera.position.set(-34, 10, 46);
   rig.current = -1;        // force the rig to re-fly even if already at stage 0
