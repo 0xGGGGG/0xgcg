@@ -1,0 +1,27 @@
+# ── OS / editor junk ──────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# ── Node (only if a toolchain is added later) ─────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log
+.cache/
+dist/
+
+# ── Blender auto-backups (the .blend source is kept; backups are not)
+*.blend1
+*.blend2
+
+# ── Logs / scratch ────────────────────────────────────────────────
+*.log
+assets/materials/logs/
+
+# ── Playwright / capture output (re-generatable) ──────────────────
+test-results/
+playwright-report/
+.playwright/

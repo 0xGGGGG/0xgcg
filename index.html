@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>0xGCG — Grow. Corrupt. Glitch.</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="ui">
+    <header id="topbar">
+      <div class="brand">
+        <span id="proj-code">0xGCG</span>
+        <span id="proj-title">Grow. Corrupt. Glitch.</span>
+      </div>
+      <div id="proj-venue">KraftKunstWerk · Leipzig</div>
+    </header>
+
+    <section id="panel"></section>
+
+    <footer id="controls">
+      <button id="prev" title="Previous (←)">‹ prev</button>
+      <button id="auto" title="Autoplay (space)">▶ auto</button>
+      <button id="next" title="Next (→)">next ›</button>
+      <div id="dots"></div>
+      <div class="hint">drag to look · click a node · ←/→ stages · space autoplay · H hide UI</div>
+    </footer>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
