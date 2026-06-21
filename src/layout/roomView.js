@@ -24,52 +24,62 @@ import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 const MODEL_URL = 'assets/materials/Maschinenhalle_separated_Panorama.fbx';
 const FIT_SIZE = 44; // longest model dimension is scaled to this many world units
 
-// Surface metadata, keyed by FBX mesh name. Copy distilled from SCRIPT.md §2.
+// Surface metadata, keyed by FBX mesh name. Distilled from SCRIPT.md §2.
 export const SURFACES = [
   {
     mesh: 'FrontWall', key: 'loop', tag: 'FRONT', label: 'The Loop',
     sub: 'Front wall',
+    role: 'main altar · void engine · recursive compiler',
     body:
-      'The void engine — black hole, pulsar, seed, void main(). It receives ' +
-      'Data and transforms it into worlds. One recurring object across the ' +
-      'whole film; it pulses like a physical law, not a drop.',
-    code: 'while (true) { grow(); corrupt(); glitch(); dimension++; }',
+      'The centre of attention. It receives Data and transforms it into ' +
+      'worlds — one recurring object across the whole film. It pulses with ' +
+      'the soundtrack like a physical law, never an EDM drop.',
+    also: ['black hole', 'pulsar', 'pupil', 'cell nucleus', 'seed', 'server node', 'void main()'],
+    fragments: ['void main() {', '  while (true) {', '    grow(); corrupt();', '    glitch(); dimension++;', '  }', '}'],
   },
   {
     mesh: 'Floor', key: 'data', tag: 'FLOOR', label: 'Data',
     sub: 'Floor',
+    role: 'soundtrack made visible · the causal fiction',
     body:
-      'The soundtrack made visible. Spectral bands flow rear → front, from ' +
-      'Meta toward The Loop. The audience sits inside the signal before it ' +
-      'becomes image — the causal fiction of the whole piece.',
-    code: 'sub · low · mid · high · transient',
+      'The floor receives the soundtrack as spectral bands flowing rear → ' +
+      'front, from Meta toward The Loop. The audience sits inside the signal ' +
+      'before it becomes image.',
+    also: ['FFT river', 'spectrogram', 'cymatic plate', 'EEG / seismograph', 'data bloodstream'],
+    fragments: ['sub  → gravity, black liquid', 'low  → roots, pipe currents', 'mid  → cellular sparks', 'high → scanlines, data dust'],
   },
   {
     mesh: 'BackWall', key: 'meta', tag: 'REAR', label: 'Meta',
     sub: 'Rear wall',
+    role: 'process · creator · debug · fourth-wall breach',
     body:
-      'The process / creator / debug layer — the backdoor terminal of ' +
-      'creation. Boot logs, shader snippets, Claude Code sessions, failed ' +
-      'renders, TODOs. The hidden operating system behind the universe.',
-    code: 'booting substrate... seed: void',
+      'The backdoor terminal of creation — the hidden operating system ' +
+      'behind the universe. It documents the making: logs, shaders, ' +
+      'sessions, failed renders, TODOs.',
+    also: ['screen captures', 'Claude Code logs', 'shader snippets', 'failed renders', 'prompt fragments'],
+    fragments: ['booting substrate...', 'seed: void', 'growth_rule: recursive_branching', 'corruption_threshold: 0.74', 'dimension++  // return void'],
   },
   {
     mesh: 'LeftWall', key: 'patch', tag: 'SIDE · L', label: 'The Patch',
     sub: 'Left wall',
+    role: 'memory of the loop · version history',
     body:
-      'The memory of the loop. Arches become portals / commits / phase ' +
-      'buffers. Read front-to-back as history: newest mutation near the ' +
-      'front, fossilized states and source leakage toward the rear.',
-    code: 'Patch 0.7 — data swarm',
+      'The side walls are the memory of the loop. Arches become portals / ' +
+      'commits / phase buffers. Read front-to-back as history: newest near ' +
+      'the front, fossilized states and source leakage toward the rear.',
+    also: ['software commits', 'synth patch cables', 'cultivated land', 'timeline of changes'],
+    fragments: ['Patch 0.4 — recursive branching', 'Patch 0.6 — circuit inheritance', 'Patch 0.7 — data swarm', 'Patch 0.8 — rollback failed'],
   },
   {
     mesh: 'RightWall', key: 'patch', tag: 'SIDE · R', label: 'The Patch',
     sub: 'Right wall',
+    role: 'mirror archive · Indra’s net',
     body:
-      'The mirror archive. Side portals replay previous, future and failed ' +
-      'branches of the same story at different scales — Indra’s net: each ' +
-      'jewel reflects every other.',
-    code: 'commit 03f7a9 ! corruption detected',
+      'The opposite bank of the same river of history. Side portals replay ' +
+      'previous, future and failed branches of the same story at different ' +
+      'scales — each jewel reflects every other.',
+    also: ['previous layer', 'future preview', 'failed generation', 'source / meta leak'],
+    fragments: ['commit 03f7a9', '+ added membrane behavior', '+ increased branching density', '! corruption detected'],
   },
 ];
 
@@ -111,11 +121,34 @@ export function createRoomView(renderer) {
   document.body.appendChild(card);
   let pinned = -1; // index of a click-pinned surface (-1 = none)
 
+  // ---- loop-cycle HUD (step chips + play/pause + caption) ------------
+  const hud = document.createElement('div');
+  hud.id = 'loop-hud';
+  document.body.appendChild(hud);
+
   // ---- transient state ----------------------------------------------
   const surfaces = []; // { def, mesh, center, normal, marker, fill, edges, baseEdgeOpacity }
   let root = null;     // the scaled/centered model group
   let bounds = null;   // THREE.Box3 of the fitted model
-  let flow = null;     // floor data-flow particles
+  let flow = null;     // floor data-flow particles (rear -> front)
+  let patchWave = null;// side-wall history particles (front -> rear)
+  let tAcc = 0;        // time accumulator for pulses
+
+  // ---- the loop cycle (SCRIPT §2 causal chain) ----------------------
+  // Meta documents -> Data flows rear→front -> The Loop transforms ->
+  // The Patch remembers (slides front→rear) -> dissolves back into Meta.
+  const CYCLE = [
+    { key: 'meta',   mesh: 'BackWall',  label: 'META',      sub: 'documents · the rear wall dreams the making', dur: 4.0 },
+    { key: 'data',   mesh: 'Floor',     label: 'DATA',      sub: 'flows · soundtrack rear → front',             dur: 4.5 },
+    { key: 'loop',   mesh: 'FrontWall', label: 'THE LOOP',  sub: 'transforms · data becomes world',             dur: 4.0 },
+    { key: 'patch',  mesh: 'LeftWall',  label: 'THE PATCH', sub: 'remembers · history slides front → rear',     dur: 5.0 },
+    { key: 'return', mesh: 'BackWall',  label: 'RETURN',    sub: 'patch dissolves into meta · dimension++',      dur: 3.0 },
+  ];
+  const cyc = { on: true, i: 0, t: 0 };
+  const em = { data: 0, patch: 0, loop: 0, meta: 0 };       // eased emphasis 0..1
+  const emT = { data: 0, patch: 0, loop: 0, meta: 0 };       // targets
+
+  const surfBy = (mesh) => surfaces.find((s) => s.def.mesh === mesh);
   const clock = new THREE.Clock();
 
   // ---- load the model -----------------------------------------------
@@ -151,6 +184,9 @@ export function createRoomView(renderer) {
     bounds = new THREE.Box3().setFromObject(root);
     addGround();
     buildFlow();
+    buildPatchWave();
+    buildHud();
+    cycleEnter(cyc.i); // start the loop on Meta
     frameAll();
     document.getElementById('layout-loading')?.remove();
   }
@@ -246,6 +282,7 @@ export function createRoomView(renderer) {
   }
 
   function pin(i) {
+    cyc.on = false; updateHud(); // manual inspection pauses the loop
     if (pinned === i) { pinned = -1; highlight(i, false); hideCard(); return; }
     if (pinned >= 0) highlight(pinned, false);
     pinned = i;
@@ -255,11 +292,14 @@ export function createRoomView(renderer) {
   }
 
   function showCard(def) {
+    card.className = `rc-${def.key}`;
     card.innerHTML = `
       <div class="rc-meta"><span>${def.tag}</span><span class="rc-key">${def.key}</span></div>
       <h4>${def.label} <small>· ${def.sub}</small></h4>
+      ${def.role ? `<p class="rc-role">${def.role}</p>` : ''}
       <p class="rc-body">${def.body}</p>
-      <code class="rc-code">${def.code}</code>`;
+      ${def.also ? `<div class="rc-also">${def.also.map((a) => `<span>${a}</span>`).join('')}</div>` : ''}
+      ${def.fragments ? `<code class="rc-code">${def.fragments.join('\n')}</code>` : ''}`;
     card.classList.add('show');
   }
   function hideCard() { card.classList.remove('show'); }
@@ -337,15 +377,16 @@ export function createRoomView(renderer) {
     const pts = new THREE.Points(geo, mat);
     pts.frustumCulled = false;
     scene.add(pts);
-    flow = { off, lat, a, b, perp, halfWidth, geo };
+    flow = { off, lat, a, b, perp, halfWidth, geo, mat };
   }
 
   function updateFlow(dt) {
     if (!flow) return;
     const p = flow.geo.attributes.position.array;
     const tmp = new THREE.Vector3();
+    const sp = 0.045 + em.data * 0.11; // surges during the DATA phase
     for (let i = 0; i < flow.off.length; i++) {
-      flow.off[i] = (flow.off[i] + dt * 0.07) % 1;
+      flow.off[i] = (flow.off[i] + dt * sp) % 1;
       const t = flow.off[i];
       tmp.lerpVectors(flow.a, flow.b, t)
         .addScaledVector(flow.perp, flow.lat[i] * flow.halfWidth);
@@ -353,6 +394,86 @@ export function createRoomView(renderer) {
       p[i * 3] = tmp.x; p[i * 3 + 1] = tmp.y; p[i * 3 + 2] = tmp.z;
     }
     flow.geo.attributes.position.needsUpdate = true;
+    flow.mat.opacity = 0.18 + em.data * 0.6;
+  }
+
+  // The Patch "history": particles riding both side walls FRONT -> REAR,
+  // i.e. the loop's output ageing from newest (front) to fossil (rear).
+  function buildPatchWave() {
+    const left = surfBy('LeftWall'), right = surfBy('RightWall');
+    const front = surfBy('FrontWall'), back = surfBy('BackWall'), floor = surfBy('Floor');
+    if (!left || !right || !front || !back || !floor) return;
+    const fz = front.center.z, bz = back.center.z;
+    const yFloor = new THREE.Box3().setFromObject(floor.mesh).max.y;
+    const hgt = Math.min(new THREE.Box3().setFromObject(left.mesh).getSize(new THREE.Vector3()).y, 11);
+    const N = 240;
+    const off = new Float32Array(N), yf = new Float32Array(N), side = new Float32Array(N);
+    for (let i = 0; i < N; i++) { off[i] = Math.random(); yf[i] = Math.random(); side[i] = i % 2 ? 1 : -1; }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0xe8d48b, size: 0.5, transparent: true, opacity: 0,
+      depthWrite: false, blending: THREE.AdditiveBlending,
+    });
+    const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; scene.add(pts);
+    patchWave = { off, yf, side, geo, mat, fz, bz, yFloor, hgt, lx: left.center.x, rx: right.center.x };
+  }
+
+  function updatePatchWave(dt) {
+    if (!patchWave) return;
+    const pw = patchWave, p = pw.geo.attributes.position.array;
+    const speed = 0.04 + em.patch * 0.12;
+    for (let i = 0; i < pw.off.length; i++) {
+      pw.off[i] = (pw.off[i] + dt * speed) % 1;
+      const t = pw.off[i];
+      p[i * 3] = pw.side[i] < 0 ? pw.lx : pw.rx;          // left or right wall
+      p[i * 3 + 1] = pw.yFloor + 1 + pw.yf[i] * pw.hgt;   // up the wall
+      p[i * 3 + 2] = pw.fz + (pw.bz - pw.fz) * t;         // front -> rear
+    }
+    pw.geo.attributes.position.needsUpdate = true;
+    pw.mat.opacity = 0.08 + em.patch * 0.6;
+  }
+
+  // ---- loop-cycle sequencer -----------------------------------------
+  function buildHud() {
+    hud.innerHTML =
+      `<div class="lh-row">` +
+      `<button class="lh-toggle" title="Play / pause the loop">❚❚</button>` +
+      `<div class="lh-steps">${CYCLE.map((c, i) =>
+        `<button class="lh-step c-${c.key}" data-i="${i}"><i></i>${c.label}</button>`).join('<span class="lh-arrow">→</span>')}</div>` +
+      `</div>` +
+      `<div class="lh-cap"><b></b><span></span></div>`;
+    hud.querySelector('.lh-toggle').addEventListener('click', () => { cyc.on = !cyc.on; updateHud(); });
+    hud.querySelectorAll('.lh-step').forEach((b) => b.addEventListener('click', () => {
+      cyc.i = +b.dataset.i; cyc.t = 0; cyc.on = true; cycleEnter(cyc.i);
+    }));
+    updateHud();
+  }
+
+  function updateHud() {
+    const tgl = hud.querySelector('.lh-toggle'); if (tgl) tgl.textContent = cyc.on ? '❚❚' : '▶';
+    hud.querySelectorAll('.lh-step').forEach((b, i) => b.classList.toggle('on', i === cyc.i));
+    const cap = hud.querySelector('.lh-cap');
+    if (cap) { const c = CYCLE[cyc.i]; cap.querySelector('b').textContent = c.label; cap.querySelector('span').textContent = c.sub; cap.className = `lh-cap c-${c.key}`; }
+  }
+
+  function cycleEnter(i) {
+    if (!surfaces.length) return;
+    pinned = -1;
+    const c = CYCLE[i];
+    emT.data = c.key === 'data' ? 1 : 0;
+    emT.patch = c.key === 'patch' ? 1 : 0;
+    emT.loop = c.key === 'loop' ? 1 : 0;
+    emT.meta = (c.key === 'meta' || c.key === 'return') ? 1 : 0;
+    surfaces.forEach((s, k) => highlight(k, false));
+    if (c.key === 'patch') {
+      [surfBy('LeftWall'), surfBy('RightWall')].forEach((s) => { const k = surfaces.indexOf(s); if (k >= 0) highlight(k, true); });
+    } else {
+      const k = surfaces.indexOf(surfBy(c.mesh)); if (k >= 0) highlight(k, true);
+    }
+    const def = SURFACES.find((d) => d.mesh === (c.key === 'return' ? 'BackWall' : c.mesh));
+    if (def) showCard(def);
+    updateHud();
   }
 
   function showLoadError() {
@@ -364,12 +485,16 @@ export function createRoomView(renderer) {
   function activate() {
     controls.enabled = true;
     markerWrap.style.display = 'block';
+    hud.style.display = 'flex';
+    cyc.on = true;
+    if (surfaces.length) cycleEnter(cyc.i);
     onResize();
     clock.getDelta(); // reset
   }
   function deactivate() {
     controls.enabled = false;
     markerWrap.style.display = 'none';
+    hud.style.display = 'none';
     hideCard();
   }
 
@@ -387,7 +512,25 @@ export function createRoomView(renderer) {
       if (flyAnim.t >= 1) flyAnim = null;
     }
     if (viewHelper.animating) viewHelper.update(dt);
+
+    // advance the loop cycle + ease emphasis
+    tAcc += dt;
+    if (cyc.on && surfaces.length && !flyAnim) {
+      cyc.t += dt;
+      if (cyc.t >= CYCLE[cyc.i].dur) { cyc.t = 0; cyc.i = (cyc.i + 1) % CYCLE.length; cycleEnter(cyc.i); }
+    }
+    for (const k of ['data', 'patch', 'loop', 'meta']) em[k] += (emT[k] - em[k]) * Math.min(1, dt * 3);
+
     updateFlow(dt);
+    updatePatchWave(dt);
+
+    // breathing pulse on the active Loop / Meta wall
+    const pulse = 0.5 + 0.5 * Math.sin(tAcc * 3.2);
+    const fl = surfBy('FrontWall');
+    if (fl) fl.edges.material.opacity = fl.baseEdgeOpacity + em.loop * (0.3 + 0.5 * pulse);
+    const bk = surfBy('BackWall');
+    if (bk) bk.edges.material.opacity = bk.baseEdgeOpacity + em.meta * (0.25 + 0.35 * pulse);
+
     controls.update();
   }
 

@@ -56,6 +56,7 @@ export class Overlay {
       <div class="meta">
         <span class="act">ACT ${s.act}</span>
         <span class="phase ${phaseClass}">${s.phase}</span>
+        ${s.time ? `<span class="time">${s.time}</span>` : ''}
         <span class="counter">${i + 1} / ${STAGES.length}</span>
       </div>
       <h1 style="--c:${MONO_UI}">${s.title}</h1>
@@ -72,6 +73,22 @@ export class Overlay {
           <ul>${s.themes.map((t) => `<li>${t}</li>`).join('')}</ul>
         </div>
       </div>
+      ${s.surfaces ? `
+      <div class="surfaces">
+        <h3>On the four surfaces</h3>
+        <ul>
+          <li class="sf sf-meta"><b>Meta</b><span>${s.surfaces.meta}</span></li>
+          <li class="sf sf-data"><b>Data</b><span>${s.surfaces.data}</span></li>
+          <li class="sf sf-loop"><b>The Loop</b><span>${s.surfaces.loop}</span></li>
+          <li class="sf sf-patch"><b>The Patch</b><span>${s.surfaces.patch}</span></li>
+        </ul>
+      </div>` : ''}
+      ${s.sound || s.movement || s.reading ? `
+      <div class="qualia">
+        ${s.sound ? `<div><b>Sound</b> ${s.sound}</div>` : ''}
+        ${s.movement ? `<div><b>Movement</b> ${s.movement}</div>` : ''}
+        ${s.reading ? `<div><b>Reading</b> ${s.reading}</div>` : ''}
+      </div>` : ''}
       <div class="refs">
         <h3>References</h3>
         ${s.refs.map((r) => `<a href="${r.url}" target="_blank" rel="noopener">↗ ${r.label}</a>`).join('')}

@@ -76,9 +76,15 @@ A view switcher in the top bar toggles between:
   (`assets/materials/…Panorama.fbx`). The hall is drawn as a dark
   wireframe; each surface carries a marker mapping it to a SCRIPT.md
   system (rear→Meta, floor→Data, front→The Loop, sides→The Patch). A
-  Blender-style axis gizmo sits bottom-right; floor particles show the
-  Data current flowing rear → front. Click a surface to read its role
-  and frame it.
+  Blender-style axis gizmo sits bottom-right. Click a surface for its
+  full card (role, interpretations, sample fragments).
+  - **The loop cycle** (HUD, top): plays the SCRIPT §2 causal chain —
+    **Meta** documents → **Data** flows rear→front along the floor →
+    **The Loop** transforms on the front wall → **The Patch** remembers,
+    its history sliding front→rear along the side walls → dissolves back
+    into **Meta**. Each phase lights its surface, drives the card, and
+    surges the matching particle current. Play/pause or click a step;
+    clicking a surface marker pauses the loop for free inspection.
 
 ## Controls
 

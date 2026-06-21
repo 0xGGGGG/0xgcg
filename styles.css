@@ -71,6 +71,26 @@ canvas{display:block}
   transition:background .2s}
 .refs a:hover{background:rgba(255,255,255,.16)}
 
+/* per-act surface breakdown + qualia (Core card) */
+.meta .time{color:var(--dim);letter-spacing:.16em}
+.surfaces{margin-bottom:14px}
+.surfaces ul{list-style:none}
+.surfaces .sf{display:grid;grid-template-columns:64px 1fr;gap:8px;padding:5px 0;
+  align-items:baseline;border-bottom:1px solid rgba(180,180,180,.08)}
+.surfaces .sf b{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  display:flex;align-items:center;gap:5px;white-space:nowrap}
+.surfaces .sf b::before{content:"";width:7px;height:7px;border-radius:99px;
+  background:currentColor;box-shadow:0 0 8px currentColor;flex:none}
+.surfaces .sf span{font-size:11.5px;line-height:1.5;color:#b6b6b6}
+.sf-meta b{color:#8be8a0}.sf-data b{color:#bfd0ff}
+.sf-loop b{color:#ff7ad9}.sf-patch b{color:#e8d48b}
+.qualia{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;
+  padding:10px 12px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);border-radius:4px}
+.qualia div{font-size:11.5px;line-height:1.5;color:#b0b0b0}
+.qualia b{color:var(--accent);letter-spacing:.1em;font-size:9.5px;
+  text-transform:uppercase;margin-right:8px}
+
 /* ---- controls ---- */
 #controls{position:absolute;bottom:0;left:0;right:0;display:flex;
   align-items:center;gap:10px;padding:16px 24px;pointer-events:auto;
@@ -216,6 +236,33 @@ body.mode-layout #layout-loading{display:block}
 .rm-meta i{background:#8be8a0;color:#8be8a0}
 .rm-patch i{background:#e8d48b;color:#e8d48b}
 
+/* ---- loop-cycle HUD (Layout) ---- */
+#loop-hud{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:13;
+  display:none;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;font:inherit}
+.lh-row{display:flex;align-items:center;gap:10px}
+.lh-toggle{font:inherit;font-size:11px;color:var(--ink);background:rgba(20,28,40,.7);
+  border:1px solid rgba(180,180,180,.22);border-radius:99px;width:30px;height:30px;
+  cursor:pointer;transition:all .2s;flex:none}
+.lh-toggle:hover{border-color:#fff;color:#fff}
+.lh-steps{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;
+  background:rgba(8,8,8,.62);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px)}
+.lh-step{font:inherit;font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dim);background:none;border:none;cursor:pointer;display:flex;align-items:center;
+  gap:6px;padding:3px 7px;border-radius:99px;transition:color .2s,background .2s}
+.lh-step i{width:7px;height:7px;border-radius:99px;background:var(--ph,#fff);color:var(--ph,#fff);
+  opacity:.45;box-shadow:0 0 8px currentColor;flex:none}
+.lh-step:hover{color:#fff}
+.lh-step.on{color:#fff;background:rgba(255,255,255,.08)}
+.lh-step.on i{opacity:1}
+.lh-arrow{color:#454545;font-size:10px}
+.lh-step.c-meta{--ph:#8be8a0}.lh-step.c-data{--ph:#bfd0ff}.lh-step.c-loop{--ph:#ff7ad9}
+.lh-step.c-patch{--ph:#e8d48b}.lh-step.c-return{--ph:#b888ff}
+.lh-cap{display:flex;align-items:baseline;gap:10px;font-size:11px;letter-spacing:.06em;
+  color:#9a9a9a;text-align:center}
+.lh-cap b{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#fff}
+.lh-cap.c-meta b{color:#8be8a0}.lh-cap.c-data b{color:#bfd0ff}.lh-cap.c-loop b{color:#ff7ad9}
+.lh-cap.c-patch b{color:#e8d48b}.lh-cap.c-return b{color:#b888ff}
+
 /* ---- room surface info card ---- */
 #room-card{position:fixed;right:24px;top:50%;transform:translateY(-50%) translateX(20px);
   width:min(320px,32vw);z-index:15;opacity:0;pointer-events:none;
@@ -230,7 +277,18 @@ body.mode-layout #layout-loading{display:block}
 #room-card .rc-key{margin-left:auto;color:#fff}
 #room-card h4{font-size:19px;color:#fff;letter-spacing:.03em;margin-bottom:12px}
 #room-card h4 small{color:var(--dim);font-weight:400;letter-spacing:.14em;font-size:11px}
+#room-card .rc-role{font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:10px}
 #room-card .rc-body{font-size:12.5px;line-height:1.6;color:#c4c4c4;margin-bottom:12px}
+#room-card .rc-also{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+#room-card .rc-also span{font-size:10px;letter-spacing:.04em;color:#b8b8b8;
+  padding:3px 8px;border:1px solid rgba(255,255,255,.14);border-radius:99px;
+  background:rgba(255,255,255,.03)}
+/* per-surface accent on the card's top border */
+#room-card.rc-loop{border-top-color:#ff7ad9}
+#room-card.rc-data{border-top-color:#bfd0ff}
+#room-card.rc-meta{border-top-color:#8be8a0}
+#room-card.rc-patch{border-top-color:#e8d48b}
 #room-card .rc-code{display:block;font-size:11px;color:#9fe9c0;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
   border-radius:3px;padding:7px 9px;white-space:pre-wrap;word-break:break-word}
