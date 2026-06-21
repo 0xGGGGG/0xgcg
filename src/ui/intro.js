@@ -11,6 +11,9 @@ import { PROJECT } from '../config/stages.js';
 // ---------------------------------------------------------------------------
 
 const POOL = '01XATCGｦｱｲｳｴｵｶｷｸｹｺﾊﾐﾑﾒﾝ{}[]/\\<>=+*#§$%&'.split('');
+// saturated CRT phosphor palette (hues, degrees) — greens, lime, gold, amber,
+// magenta, cyan, violet, blue — drawn from the per-act colors of the piece.
+const HUES = [150, 95, 45, 22, 320, 185, 268, 208];
 const rnd = (n) => (Math.random() * n) | 0;
 const pick = () => POOL[rnd(POOL.length)];
 
@@ -30,14 +33,20 @@ export class Intro {
       <div class="in-crt"></div>
       <div class="in-wrap">
         <div class="in-reveal">
-          <h1>Grow. Corrupt. Glitch.</h1>
-          <p class="in-tag">— Same story over and over again.</p>
-          <p class="in-credit">a short script made by AI and its human; about the universe, the core loop.</p>
-          <nav class="in-doors">
-            <button class="in-door" data-go="core">[ enter <b>CORE</b> ▸ ]<small>the neuron storyboard</small></button>
-            <button class="in-door" data-go="layout">[ enter <b>LAYOUT</b> ▸ ]<small>the venue blueprint</small></button>
-          </nav>
-          <p class="in-hint">↵ enter · click a door · or press <kbd>C</kbd> / <kbd>L</kbd></p>
+          <h1 class="in-verbs">
+            <span class="v" data-v="0">Grow.</span>
+            <span class="v" data-v="1">Corrupt.</span>
+            <span class="v" data-v="2">Glitch.</span>
+          </h1>
+          <div class="in-after">
+            <p class="in-tag">— Same story over and over again.</p>
+            <p class="in-credit">a short script made by AI and its human; about the universe, the core loop.</p>
+            <nav class="in-doors">
+              <button class="in-door" data-go="core">[ enter <b>CORE</b> ▸ ]<small>the neuron storyboard</small></button>
+              <button class="in-door" data-go="layout">[ enter <b>LAYOUT</b> ▸ ]<small>the venue blueprint</small></button>
+            </nav>
+            <p class="in-hint">↵ enter · click a door · or press <kbd>C</kbd> / <kbd>L</kbd></p>
+          </div>
         </div>
       </div>
       <div class="in-foot">
@@ -51,6 +60,7 @@ export class Intro {
     this.mask = document.createElement('canvas');
     this.mctx = this.mask.getContext('2d', { willReadFrequently: true });
 
+    this.verbs = [...el.querySelectorAll('.v')];
     el.querySelectorAll('.in-door').forEach((b) =>
       b.addEventListener('click', () => this.onEnter(b.dataset.go)));
     el.addEventListener('click', (e) => {
@@ -90,6 +100,9 @@ export class Intro {
     if (!this.drops || this.drops.length !== this.cols) {
       this.drops = Array.from({ length: this.cols }, () => -rnd(this.rows));
     }
+    // a saturated hue per column (a few near-white columns for sparkle)
+    this.colHue = Array.from({ length: this.cols }, () => HUES[rnd(HUES.length)]);
+    this.colSat = Array.from({ length: this.cols }, () => (Math.random() < 0.12 ? 20 : 90));
     this.mask.width = w; this.mask.height = h;
     this.maskGrid = new Uint8Array(this.cols * this.rows);
     this.logoChar = new Array(this.cols * this.rows).fill('');
@@ -132,19 +145,23 @@ export class Intro {
   // ---- boot animation -----------------------------------------------
   play() {
     this.el.classList.add('show');
-    this.el.classList.remove('resolved');
+    this.el.classList.remove('resolved', 'lit');
+    this.verbs.forEach((v) => v.classList.remove('show'));
     this.resolved = false; this.dim = false;
     this.reels = [pick(), pick(), pick()];
     this.locked = [false, false, false];
     this.clearTimers();
     this.resize();
 
+    // each letter locks, then reveals its verb:
+    //   0xG -> Grow. ,  0xGC -> Grow. Corrupt. ,  0xGCG -> Grow. Corrupt. Glitch.
     const FINAL = ['G', 'C', 'G'];
-    const stopAt = [1500, 1950, 2400];
+    const stopAt = [1500, 2150, 2800];
     stopAt.forEach((ms, i) => this.timers.push(setTimeout(() => {
       this.reels[i] = FINAL[i]; this.locked[i] = true; this.buildMask();
+      this.revealVerb(i);
     }, ms)));
-    this.timers.push(setTimeout(() => this.resolve(), 2750));
+    this.timers.push(setTimeout(() => this.resolve(), 3250));
 
     this.reelIv = setInterval(() => {
       let changed = false;
@@ -155,6 +172,11 @@ export class Intro {
     if (!this.raf) this.loop();
   }
 
+  revealVerb(i) {
+    this.el.classList.add('lit');
+    this.verbs[i] && this.verbs[i].classList.add('show');
+  }
+
   resolve() {
     if (this.resolved) return;
     this.resolved = true;
@@ -163,7 +185,8 @@ export class Intro {
     this.reels = ['G', 'C', 'G']; this.locked = [true, true, true];
     this.buildMask();
     this.clearTimers();
-    this.el.classList.add('resolved');
+    this.verbs.forEach((v) => v.classList.add('show')); // in case of skip
+    this.el.classList.add('lit', 'resolved');
   }
 
   loop() {
@@ -180,15 +203,18 @@ export class Intro {
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
 
-    // matrix rain — one moving head per column, dim tail left by the fade
+    // matrix rain — saturated, many-shaded; one moving head per column,
+    // a mid-shade char just behind it, dim tail left by the fade
     for (let c = 0; c < this.cols; c++) {
       const x = c * cellW;
       const y = this.drops[c] * cellH;
+      const h = this.colHue[c], s = this.colSat[c];
       if (y >= 0 && y < H) {
-        ctx.fillStyle = this.dim ? 'rgba(150,160,155,0.5)' : 'rgba(205,215,210,0.85)';
-        ctx.fillText(pick(), x, y);
+        const L = 40 + rnd(24); // varied lightness => many shades
+        ctx.fillStyle = `hsla(${h},${s}%,${L}%,${this.dim ? 0.4 : 0.8})`;
+        ctx.fillText(pick(), x, y - cellH);
         // bright head
-        ctx.fillStyle = this.dim ? 'rgba(220,230,225,0.55)' : 'rgba(255,255,255,0.95)';
+        ctx.fillStyle = `hsla(${h},${Math.min(100, s + 8)}%,${this.dim ? 70 : 82}%,${this.dim ? 0.6 : 1})`;
         ctx.fillText(pick(), x, y);
       }
       if (y > H && Math.random() > 0.975) this.drops[c] = -rnd(8);
@@ -204,8 +230,9 @@ export class Intro {
           if (!g[idx]) continue;
           if (Math.random() < 0.06) this.logoChar[idx] = pick(); // shimmer
           const x = c * cellW, y = r * cellH;
-          ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(x, y, cellW, cellH); // knock-out
-          ctx.fillStyle = this.resolved ? '#ffffff' : (Math.random() < 0.5 ? '#ffffff' : '#cfd8d2');
+          ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(x, y, cellW, cellH); // knock-out
+          // bright white mark with saturated sparkles
+          ctx.fillStyle = Math.random() < 0.22 ? `hsl(${this.colHue[c]},95%,72%)` : '#ffffff';
           ctx.fillText(this.logoChar[idx], x, y);
         }
       }
