@@ -349,13 +349,13 @@ body.mode-intro #VRButton{display:none!important}
 
 .in-verbs{display:flex;flex-wrap:wrap;justify-content:center;gap:.4em;
   font-size:clamp(24px,4.4vw,42px);letter-spacing:.03em;line-height:1.05;min-height:1.1em}
-.in-verbs .v{color:#fff;opacity:0;transform:translateY(12px) scale(.96);
-  filter:blur(6px);text-shadow:0 0 30px rgba(255,255,255,.4);
-  transition:opacity .5s,transform .5s,filter .5s}
+.in-verbs .v{color:#fff;opacity:0;transform:translateY(14px) scale(.95);
+  filter:blur(8px);text-shadow:0 0 30px rgba(255,255,255,.4);
+  transition:opacity .9s,transform .9s,filter .9s}
 .in-verbs .v.show{opacity:1;transform:none;filter:none}
 
 .in-after{opacity:0;transform:translateY(8px);pointer-events:none;
-  transition:opacity .7s .1s,transform .7s .1s;display:flex;flex-direction:column;
+  transition:opacity 1s .2s,transform 1s .2s;display:flex;flex-direction:column;
   align-items:center;gap:10px;margin-top:4px}
 #intro.resolved .in-after{opacity:1;transform:none;pointer-events:auto}
 .in-tag{color:#bdbdbd;font-size:14px;letter-spacing:.16em}

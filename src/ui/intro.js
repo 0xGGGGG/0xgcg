@@ -100,12 +100,22 @@ export class Intro {
     if (!this.drops || this.drops.length !== this.cols) {
       this.drops = Array.from({ length: this.cols }, () => -rnd(this.rows));
     }
-    // a saturated hue per column (a few near-white columns for sparkle)
+    // a vivid hue per column, fully saturated
     this.colHue = Array.from({ length: this.cols }, () => HUES[rnd(HUES.length)]);
-    this.colSat = Array.from({ length: this.cols }, () => (Math.random() < 0.12 ? 20 : 90));
+    this.colSat = Array.from({ length: this.cols }, () => 96 + rnd(5)); // 96–100
+
+    // the 0xGCG mark is drawn on its OWN, coarser grid so its glyphs are
+    // ~1.5x larger than the rain characters
+    this.logoFont = Math.round(this.font * 1.5);
+    this.ctx.font = `${this.logoFont}px monospace`;
+    this.logoCellW = Math.max(10, this.ctx.measureText('0').width + 1);
+    this.logoCellH = Math.round(this.logoFont * 1.05);
+    this.logoCols = Math.ceil(w / this.logoCellW);
+    this.logoRows = Math.ceil(h / this.logoCellH);
+
     this.mask.width = w; this.mask.height = h;
-    this.maskGrid = new Uint8Array(this.cols * this.rows);
-    this.logoChar = new Array(this.cols * this.rows).fill('');
+    this.maskGrid = new Uint8Array(this.logoCols * this.logoRows);
+    this.logoChar = new Array(this.logoCols * this.logoRows).fill('');
     this.buildMask();
   }
 
@@ -129,12 +139,12 @@ export class Intro {
     mctx.fillText(text, W / 2, cy);
     const img = mctx.getImageData(0, 0, W, H).data;
     const g = this.maskGrid; g.fill(0);
-    for (let r = 0; r < this.rows; r++) {
-      const py = Math.min(H - 1, (r * this.cellH + this.cellH * 0.5) | 0);
-      for (let c = 0; c < this.cols; c++) {
-        const px = Math.min(W - 1, (c * this.cellW + this.cellW * 0.5) | 0);
+    for (let r = 0; r < this.logoRows; r++) {
+      const py = Math.min(H - 1, (r * this.logoCellH + this.logoCellH * 0.5) | 0);
+      for (let c = 0; c < this.logoCols; c++) {
+        const px = Math.min(W - 1, (c * this.logoCellW + this.logoCellW * 0.5) | 0);
         if (img[(py * W + px) * 4 + 3] > 80) {
-          const idx = r * this.cols + c;
+          const idx = r * this.logoCols + c;
           g[idx] = 1;
           if (!this.logoChar[idx]) this.logoChar[idx] = pick();
         }
@@ -156,18 +166,18 @@ export class Intro {
     // each letter locks, then reveals its verb:
     //   0xG -> Grow. ,  0xGC -> Grow. Corrupt. ,  0xGCG -> Grow. Corrupt. Glitch.
     const FINAL = ['G', 'C', 'G'];
-    const stopAt = [1500, 2150, 2800];
+    const stopAt = [2400, 4000, 5600]; // slower: ~1.6s between each letter
     stopAt.forEach((ms, i) => this.timers.push(setTimeout(() => {
       this.reels[i] = FINAL[i]; this.locked[i] = true; this.buildMask();
       this.revealVerb(i);
     }, ms)));
-    this.timers.push(setTimeout(() => this.resolve(), 3250));
+    this.timers.push(setTimeout(() => this.resolve(), 6400));
 
     this.reelIv = setInterval(() => {
       let changed = false;
       for (let i = 0; i < 3; i++) if (!this.locked[i]) { this.reels[i] = pick(); changed = true; }
       if (changed) this.buildMask();
-    }, 70);
+    }, 80);
 
     if (!this.raf) this.loop();
   }
@@ -203,36 +213,44 @@ export class Intro {
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
 
-    // matrix rain — saturated, many-shaded; one moving head per column,
-    // a mid-shade char just behind it, dim tail left by the fade
+    // matrix rain — vivid & many-shaded: a 5-char gradient tail per column
+    // (varied lightness = lots of shades) topped by a bright saturated head
+    const TAIL = 5;
     for (let c = 0; c < this.cols; c++) {
       const x = c * cellW;
       const y = this.drops[c] * cellH;
       const h = this.colHue[c], s = this.colSat[c];
+      for (let k = TAIL; k >= 1; k--) {
+        const ty = y - k * cellH;
+        if (ty < 0 || ty >= H) continue;
+        const L = 18 + rnd(46) - k * 3;            // wide spread => many shades
+        const a = (this.dim ? 0.32 : 0.62) / k;    // fades up the tail
+        ctx.fillStyle = `hsla(${h},${s}%,${Math.max(10, L)}%,${a})`;
+        ctx.fillText(pick(), x, ty);
+      }
       if (y >= 0 && y < H) {
-        const L = 40 + rnd(24); // varied lightness => many shades
-        ctx.fillStyle = `hsla(${h},${s}%,${L}%,${this.dim ? 0.4 : 0.8})`;
-        ctx.fillText(pick(), x, y - cellH);
-        // bright head
-        ctx.fillStyle = `hsla(${h},${Math.min(100, s + 8)}%,${this.dim ? 70 : 82}%,${this.dim ? 0.6 : 1})`;
+        // bright head — mid lightness keeps the hue vivid (not washed white)
+        ctx.fillStyle = `hsla(${h},${s}%,${this.dim ? 58 : 66}%,${this.dim ? 0.7 : 1})`;
         ctx.fillText(pick(), x, y);
       }
       if (y > H && Math.random() > 0.975) this.drops[c] = -rnd(8);
       this.drops[c] += this.dim ? 0.55 : 1;
     }
 
-    // the 0xGCG mark, formed out of bright glyphs
+    // the 0xGCG mark, formed out of bright glyphs (own 1.5x grid)
     const g = this.maskGrid;
     if (g) {
-      for (let r = 0; r < this.rows; r++) {
-        for (let c = 0; c < this.cols; c++) {
-          const idx = r * this.cols + c;
+      const lw = this.logoCellW, lh = this.logoCellH;
+      ctx.font = `700 ${this.logoFont}px monospace`;
+      for (let r = 0; r < this.logoRows; r++) {
+        for (let c = 0; c < this.logoCols; c++) {
+          const idx = r * this.logoCols + c;
           if (!g[idx]) continue;
           if (Math.random() < 0.06) this.logoChar[idx] = pick(); // shimmer
-          const x = c * cellW, y = r * cellH;
-          ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(x, y, cellW, cellH); // knock-out
+          const x = c * lw, y = r * lh;
+          ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(x, y, lw, lh); // knock-out
           // bright white mark with saturated sparkles
-          ctx.fillStyle = Math.random() < 0.22 ? `hsl(${this.colHue[c]},95%,72%)` : '#ffffff';
+          ctx.fillStyle = Math.random() < 0.24 ? `hsl(${HUES[rnd(HUES.length)]},100%,68%)` : '#ffffff';
           ctx.fillText(this.logoChar[idx], x, y);
         }
       }
