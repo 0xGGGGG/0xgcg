@@ -15,6 +15,7 @@ import { createRoomView } from './layout/roomView.js';
 import { CosmicAddress, initHeaderAddress } from './ui/cosmicAddress.js';
 import { Intro } from './ui/intro.js';
 import { loadSection } from './ui/sectionView.js';
+import { Player } from './ui/player.js';
 
 const app = document.getElementById('app');
 
@@ -74,28 +75,34 @@ let auto = false;
 let autoTimer = 0;
 const DWELL = 13; // seconds parked at a node in auto mode
 
-const overlay = new Overlay(document.getElementById('ui'), {
-  onPrev: () => go((active - 1 + STAGES.length) % STAGES.length),
-  onNext: () => go((active + 1) % STAGES.length),
-  onToggleAuto: () => setAuto(!auto),
-  onJump: (i) => go(i),
+const overlay = new Overlay(document.getElementById('ui'));
+
+// shared timeline Player for the 5 acts (camera-follow on select)
+const corePlayer = new Player({
+  steps: STAGES.map((s) => ({ key: s.id, label: s.title, sub: s.subtitle, color: s.color, dur: DWELL })),
+  onSelect: (i) => { setAuto(false); go(i); },
+  onToggle: (on) => setAuto(on),
+  playing: false,
 });
+corePlayer.mount(document.getElementById('player-mount'));
 
 let active = 0;
 rig.onDepart = () => overlay.hide();
 rig.onArrive = (i) => {
   active = i;
   overlay.show(i);
+  corePlayer.setActive(i);
 };
 
 function go(i) {
   active = i;
+  corePlayer.setActive(i);
   rig.goTo(i);
 }
 function setAuto(on) {
   auto = on;
   autoTimer = 0;
-  overlay.setAuto(on);
+  corePlayer.setPlaying(on);
 }
 
 // ---- view mode: 'core' (neuron storyboard) | 'layout' (room plan) ----
@@ -128,6 +135,7 @@ function setMode(m, { push = true, reset = true } = {}) {
   document.body.classList.toggle('mode-layout', m === 'layout');
   document.body.classList.toggle('mode-intro', m === 'intro');
   navBtns.forEach((b) => b.classList.toggle('on', b.dataset.view === m));
+  corePlayer.el.style.display = m === 'core' ? 'flex' : 'none';
   if (m === 'intro') {
     setAuto(false);
     controls.enabled = false;
@@ -152,7 +160,6 @@ function setMode(m, { push = true, reset = true } = {}) {
   }
 }
 navBtns.forEach((b) => b.addEventListener('click', () => setMode(b.dataset.view)));
-document.getElementById('layout-frame').addEventListener('click', () => room && room.frameRoom());
 // browser back / forward
 addEventListener('popstate', () => setMode(pathToMode(location.pathname), { push: false }));
 
@@ -341,6 +348,7 @@ function frame() {
       go((active + 1) % STAGES.length);
     }
   }
+  corePlayer.setProgress(active, auto ? Math.min(1, autoTimer / DWELL) : (rig.anim ? 0 : 1));
 
   rig.update(dt, t);
   updateNodes(t);
@@ -363,7 +371,7 @@ function frame() {
 renderer.setAnimationLoop(frame);
 
 // ---- boot: pick the view from the URL (/, /core -> core ; /layout -> layout)
-overlay.setAuto(false);
+setAuto(false);
 setMode(pathToMode(location.pathname), { push: false });
 
 // ---- helpers ----------------------------------------------------------

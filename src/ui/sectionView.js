@@ -9,12 +9,13 @@
 const SRC = 'assets/materials/Cross_Panorama_4K_correct_Drawing_BoW.jpg';
 
 // marker anchors as fractions of the drawing (tweak freely)
+//   loop = top-centre · patch L/R = top-left/right wings · data = middle · meta = bottom
 export const SECTION_MARKERS = [
-  { surf: 'meta',  label: 'Meta',      x: 0.500, y: 0.090 },
-  { surf: 'loop',  label: 'The Loop',  x: 0.500, y: 0.620 },
-  { surf: 'data',  label: 'Data',      x: 0.500, y: 0.905 },
-  { surf: 'patch', label: 'Patch · L', x: 0.405, y: 0.520 },
-  { surf: 'patch', label: 'Patch · R', x: 0.595, y: 0.520 },
+  { surf: 'loop',  label: 'The Loop',  x: 0.500, y: 0.090 },
+  { surf: 'patch', label: 'Patch · L', x: 0.150, y: 0.095 },
+  { surf: 'patch', label: 'Patch · R', x: 0.850, y: 0.095 },
+  { surf: 'data',  label: 'Data',      x: 0.500, y: 0.520 },
+  { surf: 'meta',  label: 'Meta',      x: 0.500, y: 0.905 },
 ];
 
 let _url = null;     // keyed PNG data URL (cached)

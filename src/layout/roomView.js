@@ -3,6 +3,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { buildSection } from '../ui/sectionView.js';
+import { Player } from '../ui/player.js';
+
+const PHASE_COLOR = { meta: '#8be8a0', data: '#bfd0ff', loop: '#ff7ad9', patch: '#e8d48b', return: '#b888ff' };
 
 // ---------------------------------------------------------------------------
 // ## Layout — a navigable, holographic 3D plan of the venue (the
@@ -122,14 +125,18 @@ export function createRoomView(renderer) {
   document.body.appendChild(card);
   let pinned = -1; // index of a click-pinned surface (-1 = none)
 
-  // ---- loop-cycle HUD (step chips + play/pause + caption) ------------
-  const hud = document.createElement('div');
-  hud.id = 'loop-hud';
-  document.body.appendChild(hud);
+  // ---- gizmo-area options: frame-all + section toggle ---------------
+  const frameBtn = document.createElement('button');
+  frameBtn.id = 'frame-btn';
+  frameBtn.className = 'gizmo-opt';
+  frameBtn.title = 'Frame the whole room';
+  frameBtn.innerHTML = '⤢ frame';
+  frameBtn.addEventListener('click', () => frameRoom());
+  document.body.appendChild(frameBtn);
 
-  // ---- section-drawing overlay + toggle (near the gizmo) -------------
   const secToggle = document.createElement('button');
   secToggle.id = 'section-toggle';
+  secToggle.className = 'gizmo-opt';
   secToggle.title = 'Toggle the annotated cross-section';
   secToggle.innerHTML = '▣ section';
   document.body.appendChild(secToggle);
@@ -188,6 +195,15 @@ export function createRoomView(renderer) {
   const surfBy = (mesh) => surfaces.find((s) => s.def.mesh === mesh);
   const clock = new THREE.Clock();
 
+  // ---- shared timeline Player (drives the cycle, camera follows) -----
+  const player = new Player({
+    steps: CYCLE.map((c) => ({ key: c.key, label: c.label, sub: c.sub, color: PHASE_COLOR[c.key], dur: c.dur })),
+    onSelect: (i) => { cyc.i = i; cyc.t = 0; cycleEnter(i, { fly: true }); },
+    onToggle: (on) => { cyc.on = on; },
+    playing: true,
+  });
+  player.mount(document.getElementById('player-mount'));
+
   // ---- load the model -----------------------------------------------
   const loader = new FBXLoader();
   loader.load(MODEL_URL, onLoaded, undefined, (err) => {
@@ -222,9 +238,8 @@ export function createRoomView(renderer) {
     addGround();
     buildFlow();
     buildPatchWave();
-    buildHud();
-    cycleEnter(cyc.i); // start the loop on Meta
     frameAll();
+    cycleEnter(cyc.i, { fly: false }); // start the loop on Meta (don't yank the camera)
     document.getElementById('layout-loading')?.remove();
   }
 
@@ -319,7 +334,7 @@ export function createRoomView(renderer) {
   }
 
   function pin(i) {
-    cyc.on = false; updateHud(); // manual inspection pauses the loop
+    cyc.on = false; player.setPlaying(false); // manual inspection pauses the loop
     if (pinned === i) { pinned = -1; highlight(i, false); hideCard(); return; }
     if (pinned >= 0) highlight(pinned, false);
     pinned = i;
@@ -341,13 +356,18 @@ export function createRoomView(renderer) {
   }
   function hideCard() { card.classList.remove('show'); }
 
-  // gently fly the orbit target/camera to frame one surface
+  // gently fly the orbit target + camera to a (target, eye) pair
   let flyAnim = null;
+  function flyTo(target, eye) {
+    flyAnim = { fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(), toP: eye.clone(), t: 0 };
+  }
   function focusSurface(s) {
+    if (!s) return;
     const target = s.center.clone();
     const dist = Math.max(FIT_SIZE * 0.55, 18);
-    const eye = target.clone().addScaledVector(s.normal, dist).setY(target.y + FIT_SIZE * 0.18);
-    flyAnim = { fromT: controls.target.clone(), toT: target, fromP: camera.position.clone(), toP: eye, t: 0 };
+    const eye = target.clone().addScaledVector(s.normal, dist);
+    eye.y = target.y + FIT_SIZE * 0.18;
+    flyTo(target, eye);
   }
 
   function frameAll() {
@@ -472,29 +492,7 @@ export function createRoomView(renderer) {
   }
 
   // ---- loop-cycle sequencer -----------------------------------------
-  function buildHud() {
-    hud.innerHTML =
-      `<div class="lh-row">` +
-      `<button class="lh-toggle" title="Play / pause the loop">❚❚</button>` +
-      `<div class="lh-steps">${CYCLE.map((c, i) =>
-        `<button class="lh-step c-${c.key}" data-i="${i}"><i></i>${c.label}</button>`).join('<span class="lh-arrow">→</span>')}</div>` +
-      `</div>` +
-      `<div class="lh-cap"><b></b><span></span></div>`;
-    hud.querySelector('.lh-toggle').addEventListener('click', () => { cyc.on = !cyc.on; updateHud(); });
-    hud.querySelectorAll('.lh-step').forEach((b) => b.addEventListener('click', () => {
-      cyc.i = +b.dataset.i; cyc.t = 0; cyc.on = true; cycleEnter(cyc.i);
-    }));
-    updateHud();
-  }
-
-  function updateHud() {
-    const tgl = hud.querySelector('.lh-toggle'); if (tgl) tgl.textContent = cyc.on ? '❚❚' : '▶';
-    hud.querySelectorAll('.lh-step').forEach((b, i) => b.classList.toggle('on', i === cyc.i));
-    const cap = hud.querySelector('.lh-cap');
-    if (cap) { const c = CYCLE[cyc.i]; cap.querySelector('b').textContent = c.label; cap.querySelector('span').textContent = c.sub; cap.className = `lh-cap c-${c.key}`; }
-  }
-
-  function cycleEnter(i) {
+  function cycleEnter(i, { fly = true } = {}) {
     if (!surfaces.length) return;
     pinned = -1;
     const c = CYCLE[i];
@@ -510,7 +508,26 @@ export function createRoomView(renderer) {
     }
     const def = SURFACES.find((d) => d.mesh === (c.key === 'return' ? 'BackWall' : c.mesh));
     if (def) showCard(def);
-    updateHud();
+    if (fly) focusForPhase(c.key);
+    player.setActive(i);
+  }
+
+  // camera vantage per phase (mirrors clicking a surface marker)
+  function focusForPhase(key) {
+    if (key === 'data') return focusSurface(surfBy('Floor'));
+    if (key === 'loop') return focusSurface(surfBy('FrontWall'));
+    if (key === 'meta' || key === 'return') return focusSurface(surfBy('BackWall'));
+    if (key === 'patch') {
+      // a front-elevated 3/4 vantage so both side walls (and the wave) read
+      const front = surfBy('FrontWall'), back = surfBy('BackWall');
+      if (!front || !back || !bounds) return;
+      const center = bounds.getBoundingSphere(new THREE.Sphere()).center;
+      const dir = front.center.clone().sub(back.center).setY(0).normalize(); // toward front
+      const dist = FIT_SIZE * 0.7;
+      const eye = center.clone().addScaledVector(dir, dist * 0.6);
+      eye.y = center.y + dist * 0.5;
+      flyTo(center, eye);
+    }
   }
 
   function showLoadError() {
@@ -522,17 +539,20 @@ export function createRoomView(renderer) {
   function activate() {
     controls.enabled = true;
     markerWrap.style.display = 'block';
-    hud.style.display = 'flex';
+    player.el.style.display = 'flex';
+    frameBtn.style.display = 'block';
     secToggle.style.display = 'block';
     cyc.on = true;
-    if (surfaces.length) cycleEnter(cyc.i);
+    player.setPlaying(true);
+    if (surfaces.length) cycleEnter(cyc.i, { fly: false });
     onResize();
     clock.getDelta(); // reset
   }
   function deactivate() {
     controls.enabled = false;
     markerWrap.style.display = 'none';
-    hud.style.display = 'none';
+    player.el.style.display = 'none';
+    frameBtn.style.display = 'none';
     secToggle.style.display = 'none';
     toggleSection(false);
     hideCard();
@@ -559,6 +579,7 @@ export function createRoomView(renderer) {
       cyc.t += dt;
       if (cyc.t >= CYCLE[cyc.i].dur) { cyc.t = 0; cyc.i = (cyc.i + 1) % CYCLE.length; cycleEnter(cyc.i); }
     }
+    player.setProgress(cyc.i, flyAnim ? 0 : cyc.t / CYCLE[cyc.i].dur);
     for (const k of ['data', 'patch', 'loop', 'meta']) em[k] += (emT[k] - em[k]) * Math.min(1, dt * 3);
 
     updateFlow(dt);

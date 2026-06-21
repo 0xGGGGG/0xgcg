@@ -86,17 +86,23 @@ A view switcher in the top bar toggles between:
     surges the matching particle current. Play/pause or click a step;
     clicking a surface marker pauses the loop for free inspection.
 
+## The player / timeline
+
+A shared transport sits at the bottom of both views — a big **play/pause**, the
+stage chips (acts in Core, loop phases in Layout), and a **ruler** with minor
+ticks and a colored boundary line per stage plus a moving playhead. Clicking a
+stage (chip or ruler segment) **navigates the camera** there — identical to
+clicking a node/surface in 3D. (It's built to grow into a full timeline view.)
+
 ## Controls
 
 **Core**
-- **drag** — orbit / free-look around the current node
-- **click a node** — fly to that stage
-- **← / →** — previous / next stage · **1–5** — jump to act
-- **space** — autoplay (13s dwell per stage; good for an installation loop)
+- **drag** — orbit / free-look · **click a node** or a player stage — fly there
+- **← / →** — prev / next · **1–5** — jump to act · **space** — play/pause
 
 **Layout**
-- **drag** — orbit · **scroll** — zoom · **click a surface** — frame + info
-- **gizmo** (bottom-right) — snap to an axis · **⤢ frame all** — reset view
+- **drag** — orbit · **scroll** — zoom · **click a surface** or player phase — fly there
+- near the **gizmo** (bottom-right): **⤢ frame** (whole room) · **▣ section** (annotated cross-section)
 
 **Both:** **C / L** switch view · **A** cosmic address · **H** hide the UI ·
 **Enter VR** — WebXR (Core)

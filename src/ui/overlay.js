@@ -8,36 +8,14 @@ const MONO_UI = '#d6d6d6'; // neutral grey accent for the black & white theme
 // the camera rig (hide on depart, show on arrive).
 
 export class Overlay {
-  constructor(root, { onPrev, onNext, onToggleAuto, onJump }) {
+  // Navigation now lives in the shared Player; the Overlay just renders the
+  // active act's panel (driven by the camera rig: hide on depart, show on arrive).
+  constructor(root) {
     this.root = root;
-    this.onJump = onJump;
     this.panel = root.querySelector('#panel');
-    this.dotsWrap = root.querySelector('#dots');
-
-    root.querySelector('#prev').addEventListener('click', onPrev);
-    root.querySelector('#next').addEventListener('click', onNext);
-    this.autoBtn = root.querySelector('#auto');
-    this.autoBtn.addEventListener('click', onToggleAuto);
-
-    // build progress dots
-    STAGES.forEach((s, i) => {
-      const d = document.createElement('button');
-      d.className = 'dot';
-      d.style.setProperty('--c', MONO_UI);
-      d.title = `${s.act} · ${s.title}`;
-      d.addEventListener('click', () => onJump(i));
-      this.dotsWrap.appendChild(d);
-    });
-    this.dots = [...this.dotsWrap.children];
-
     root.querySelector('#proj-code').textContent = PROJECT.code;
     root.querySelector('#proj-title').textContent = PROJECT.title;
     root.querySelector('#proj-venue').textContent = PROJECT.venue;
-  }
-
-  setAuto(on) {
-    this.autoBtn.classList.toggle('on', on);
-    this.autoBtn.textContent = on ? '❚❚ auto' : '▶ auto';
   }
 
   hide() {
@@ -46,7 +24,6 @@ export class Overlay {
 
   show(i) {
     const s = STAGES[i];
-    this.dots.forEach((d, k) => d.classList.toggle('active', k === i));
 
     const phaseClass = s.phase.toLowerCase();
     const video = s.video
