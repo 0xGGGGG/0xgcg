@@ -66,44 +66,57 @@ export class ScriptPage {
       || vs.find((v) => /^en/i.test(v.lang)) || vs[0] || null;
   }
 
+  // wrap each word in a <span> (karaoke target), keeping whitespace as text
+  // so the utterance charIndex maps cleanly to a word
+  wrapWords(text, el) {
+    const words = []; let idx = 0;
+    text.split(/(\s+)/).forEach((tok) => {
+      if (tok === '' || /^\s+$/.test(tok)) { el.appendChild(document.createTextNode(tok)); idx += tok.length; return; }
+      const w = document.createElement('span'); w.className = 'w'; w.textContent = tok;
+      el.appendChild(w); words.push({ el: w, s: idx, e: idx + tok.length }); idx += tok.length;
+    });
+    return words;
+  }
+
   // ---- render a passage ---------------------------------------------
   render(i) {
+    clearTimeout(this.advTimer); clearTimeout(this._revealTimer);
     this.i = Math.max(0, Math.min(PASSAGES.length - 1, i));
     const p = PASSAGES[this.i];
+    this.hero = !!p.hero;
     this.counter.textContent = `${String(this.i + 1).padStart(2, '0')} / ${String(PASSAGES.length).padStart(2, '0')} · ${p.tag}`;
-    this.paras = [];
-    this.paraIdx = 0;
+    this.paras = []; this.paraIdx = 0;
 
     const wrap = document.createElement('div');
     wrap.className = 'sp-passage' + (p.hero ? ' hero' : '');
-    wrap.innerHTML = `<h2 class="sp-title">${p.title}</h2>`;
-    const body = document.createElement('div'); body.className = 'sp-body';
-    wrap.appendChild(body);
+    const title = document.createElement('h2'); title.className = 'sp-title';
+    this.titleEl = title; this.titleText = p.title;
+    this.titleWords = this.wrapWords(p.title, title);
+    wrap.appendChild(title);
 
+    const body = document.createElement('div'); body.className = 'sp-body';
+    this.bodyEl = body;
     p.paras.forEach((text) => {
       const pEl = document.createElement('p'); pEl.className = 'sp-para';
-      const words = [];
-      let idx = 0;
-      // wrap words in spans, keep whitespace as text so charIndex maps cleanly
-      text.split(/(\s+)/).forEach((tok) => {
-        if (/^\s+$/.test(tok) || tok === '') { pEl.appendChild(document.createTextNode(tok)); idx += tok.length; return; }
-        const w = document.createElement('span'); w.className = 'w'; w.textContent = tok;
-        pEl.appendChild(w); words.push({ el: w, s: idx, e: idx + tok.length }); idx += tok.length;
-      });
+      const words = this.wrapWords(text, pEl);
       body.appendChild(pEl);
       this.paras.push({ el: pEl, text, words });
     });
-
-    if (p.code) {
-      const c = document.createElement('pre'); c.className = 'sp-codeblock'; c.textContent = p.code;
-      body.appendChild(c);
-    }
+    if (p.code) { const c = document.createElement('pre'); c.className = 'sp-codeblock'; c.textContent = p.code; body.appendChild(c); }
     if (p.media) body.appendChild(this.media(p.media));
+    wrap.appendChild(body);
 
     this.stage.innerHTML = '';
     this.stage.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('in'));
+
+    // the title shows first; the body reveals after the title is spoken (or,
+    // if not narrating, after a short beat)
+    if (this.playing) this.startNarration();
+    else this._revealTimer = setTimeout(() => this.revealBody(), 850);
   }
+
+  revealBody() { if (this.bodyEl) this.bodyEl.classList.add('in'); }
 
   media(m) {
     const box = document.createElement('div'); box.className = 'sp-media';
@@ -115,6 +128,32 @@ export class ScriptPage {
   }
 
   // ---- narration (TTS + karaoke) ------------------------------------
+  // speak the (big) title first, then pause, then reveal + speak the body
+  startNarration() {
+    if (this.hero || !this.titleText) { this.revealBody(); this.speakFrom(0); return; }
+    this.speakTitle();
+  }
+
+  speakTitle() {
+    this.titleEl.classList.add('active');
+    const after = () => {
+      this.titleWords.forEach((w) => w.el.classList.add('done'));
+      this.titleEl.classList.remove('active');
+      this._revealTimer = setTimeout(() => { this.revealBody(); this.speakFrom(0); }, 750);
+    };
+    if (!this.tts) { after(); return; }
+    const u = new SpeechSynthesisUtterance(this.titleText);
+    u.rate = 0.9; u.pitch = 0.8; if (this.voice) u.voice = this.voice;
+    let lit = -1;
+    u.onboundary = (e) => {
+      const ci = e.charIndex || 0;
+      const wi = this.titleWords.findIndex((w) => ci >= w.s && ci < w.e);
+      if (wi >= 0 && wi !== lit) { if (lit >= 0) this.titleWords[lit].el.classList.remove('lit'); this.titleWords[wi].el.classList.add('lit'); lit = wi; }
+    };
+    u.onend = after;
+    this.curUtter = u; this.tts.cancel(); this.tts.speak(u);
+  }
+
   speakFrom(idx) {
     if (!this.tts) return;
     if (idx >= this.paras.length) { this.onPassageEnd(); return; }
@@ -138,7 +177,7 @@ export class ScriptPage {
 
   onPassageEnd() {
     if (this.playing && this.i < PASSAGES.length - 1) {
-      this.advTimer = setTimeout(() => { if (this.playing) { this.render(this.i + 1); this.speakFrom(0); } }, 1000);
+      this.advTimer = setTimeout(() => { if (this.playing) this.render(this.i + 1); }, 1100); // render auto-narrates
     } else { this.playing = false; this.setPlayBtn(); }
   }
 
@@ -148,16 +187,22 @@ export class ScriptPage {
   }
 
   action(a) {
-    clearTimeout(this.advTimer);
-    if (a === 'reset') { this.playing = false; this.stop(); this.render(0); this.setPlayBtn(); }
-    else if (a === 'prev') { this.stopSpeak(); this.render(this.i - 1); if (this.playing) this.speakFrom(0); }
-    else if (a === 'next') { this.stopSpeak(); this.render(this.i + 1); if (this.playing) this.speakFrom(0); }
+    clearTimeout(this.advTimer); clearTimeout(this._revealTimer);
+    if (a === 'reset') { this.playing = false; this.stopSpeak(); this.render(0); this.setPlayBtn(); }
+    else if (a === 'prev') { this.stopSpeak(); this.render(this.i - 1); }   // render narrates if playing
+    else if (a === 'next') { this.stopSpeak(); this.render(this.i + 1); }
     else if (a === 'play') {
-      this.playing = !this.playing; this.setPlayBtn();
-      if (this.playing) this.speakFrom(0); else if (this.tts) this.tts.cancel();
+      if (!this.playing) {
+        this.playing = true; this.setPlayBtn();
+        if (this.tts && this.tts.paused) this.tts.resume();
+        else if (!this.tts || !this.tts.speaking) this.startNarration();
+      } else {
+        this.playing = false; this.setPlayBtn();
+        if (this.tts && this.tts.speaking) this.tts.pause();
+      }
     }
   }
-  stopSpeak() { if (this.tts) this.tts.cancel(); clearTimeout(this.advTimer); }
+  stopSpeak() { if (this.tts) this.tts.cancel(); clearTimeout(this.advTimer); clearTimeout(this._revealTimer); }
   stop() { this.playing = false; this.stopSpeak(); }
 
   key(e) {

@@ -468,9 +468,14 @@ body.mode-script #portal{display:none!important}
 .sp-passage{opacity:0;transform:translateY(16px);filter:blur(6px);
   transition:opacity .7s,transform .7s,filter .7s;width:100%}
 .sp-passage.in{opacity:1;transform:none;filter:none}
-.sp-title{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);
-  margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.12)}
+.sp-title{font-size:clamp(28px,5vw,52px);font-weight:700;letter-spacing:.02em;line-height:1.1;
+  color:#fff;margin-bottom:22px;text-shadow:0 0 26px rgba(255,255,255,.22)}
+.sp-title.active{text-shadow:0 0 32px rgba(180,255,210,.4)}
+.sp-title .w.lit{color:#fff;text-shadow:0 0 22px rgba(180,255,210,.75)}
+.sp-title .w.done{color:#dfeee7}
 .sp-passage.hero .sp-title{display:none}
+.sp-body{opacity:0;transform:translateY(10px);transition:opacity .7s,transform .7s}
+.sp-body.in{opacity:1;transform:none}
 .sp-body p.sp-para{font-size:clamp(17px,2.4vw,24px);line-height:1.7;color:#7c8a82;
   margin-bottom:16px;letter-spacing:.01em;transition:color .4s}
 .sp-passage.hero .sp-body p.sp-para:first-child{font-size:clamp(34px,7vw,72px);font-weight:700;
