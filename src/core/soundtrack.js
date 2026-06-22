@@ -13,11 +13,11 @@ const SR = 44100;   // synth sample rate (AudioBuffer declares it; ctx resamples
 const DUR = 16;     // seconds per generated loop
 
 const PARAMS = {
-  boot:    { base: 48, pulse: 0.30, noise: 0.04, mode: 'drone',  amp: 0.55 },
-  feed:    { base: 55, pulse: 0.85, noise: 0.10, mode: 'click',  amp: 0.62 },
-  grow:    { base: 62, pulse: 0.50, noise: 0.07, mode: 'breath', amp: 0.62 },
-  corrupt: { base: 50, pulse: 1.40, noise: 0.16, mode: 'buzz',   amp: 0.66 },
-  glitch:  { base: 44, pulse: 2.20, noise: 0.24, mode: 'broken', amp: 0.70 },
+  init:     { base: 48, pulse: 0.30, noise: 0.04, mode: 'drone',  amp: 0.55 },
+  grow:     { base: 62, pulse: 0.50, noise: 0.07, mode: 'breath', amp: 0.62 },
+  optimize: { base: 55, pulse: 0.85, noise: 0.10, mode: 'click',  amp: 0.62 },
+  overfit:  { base: 50, pulse: 1.40, noise: 0.16, mode: 'buzz',   amp: 0.66 },
+  glitch:   { base: 44, pulse: 2.20, noise: 0.24, mode: 'broken', amp: 0.70 },
 };
 
 const rng = (s) => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -97,7 +97,7 @@ export class Soundtrack {
 
 // ---- synthesis -----------------------------------------------------------
 function synth(id) {
-  const p = PARAMS[id] || PARAMS.boot;
+  const p = PARAMS[id] || PARAMS.init;
   const n = Math.floor(DUR * SR);
   const d = new Float32Array(n);
   const rand = rng(((id.charCodeAt(0) || 65) * 131 + 7) >>> 0);

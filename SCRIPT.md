@@ -16,12 +16,17 @@ The universe is not shown as a linear story.
 It is shown as a recurring operation:
 
 ```c
-grow();
-corrupt();
-glitch();
+init();
+grow(); optimize();
+overfit(); glitch();
 dimension++;
 return void;
 ```
+
+The core cycle is `init -> [grow -> optimize] -> [overfit -> glitch] -> (loop)`.
+`grow <> optimize` and `overfit <> glitch` are pairs: growth and optimization
+are the same gesture getting better at itself; overfitting and glitch are the
+same collapse — the pattern reproducing through its own breakdown.
 
 Every layer thinks it is the final world.
 
@@ -378,15 +383,17 @@ Instead:
 - the floor carries the causal signal
 - the rear wall reveals the meta-process
 
-The 5 acts:
+The 5 acts — the cycle `init -> [grow -> optimize] -> [overfit -> glitch]`:
 
 ```text
-I.   Boot / Idle
-II.  Feed / Collapse
-III. Grow / Morphogenesis
-IV.  Corrupt / Optimization
-V.   Glitch / Dimension++
+I.   Init     / Idle
+II.  Grow     / Morphogenesis
+III. Optimize / Efficiency
+IV.  Overfit  / Over-optimization
+V.   Glitch   / Dimension++
 ```
+
+`grow <> optimize` and `overfit <> glitch` are pairs.
 
 The classic 5-act structure is adapted for immersive space:
 

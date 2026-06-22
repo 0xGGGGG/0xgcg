@@ -338,7 +338,8 @@ addEventListener('resize', () => {
 // GLITCH reads as a touch hotter without burning to white.
 function applyGrade(dt) {
   const s = STAGES[active];
-  const targetBloom = s.phase === 'GLITCH' ? 0.5 : s.phase === 'CORRUPT' ? 0.38 : 0.3;
+  const targetBloom = s.phase === 'GLITCH' ? 0.5 : s.phase === 'OVERFIT' ? 0.42
+    : s.phase === 'OPTIMIZE' ? 0.34 : 0.3;
   bloom.strength += (targetBloom - bloom.strength) * dt * 1.5;
 }
 

@@ -41,7 +41,7 @@ export const SURFACES = [
       'worlds — one recurring object across the whole film. It pulses with ' +
       'the soundtrack like a physical law, never an EDM drop.',
     also: ['black hole', 'pulsar', 'pupil', 'cell nucleus', 'seed', 'server node', 'void main()'],
-    fragments: ['void main() {', '  while (true) {', '    grow(); corrupt();', '    glitch(); dimension++;', '  }', '}'],
+    fragments: ['void main() {', '  init();', '  while (true) {', '    grow(); optimize();', '    overfit(); glitch();', '    dimension++;', '  }', '}'],
     refs: [
       { label: 'Black hole / event horizon shader', url: 'https://www.shadertoy.com/results?query=black+hole' },
       { label: 'Pulsar — recurring object', url: 'https://www.youtube.com/results?search_query=pulsar+visualization' },
@@ -71,7 +71,7 @@ export const SURFACES = [
       'behind the universe. It documents the making: logs, shaders, ' +
       'sessions, failed renders, TODOs.',
     also: ['screen captures', 'Claude Code logs', 'shader snippets', 'failed renders', 'prompt fragments'],
-    fragments: ['booting substrate...', 'seed: void', 'growth_rule: recursive_branching', 'corruption_threshold: 0.74', 'dimension++  // return void'],
+    fragments: ['init substrate...', 'seed: void', 'growth_rule: recursive_branching', 'optimize: true', 'overfit_threshold: 0.74', 'dimension++  // return void'],
     refs: [
       { label: 'Claude Code', url: 'https://claude.com/claude-code' },
       { label: 'Terminal / glitch typography', url: 'https://www.youtube.com/results?search_query=terminal+glitch+typography' },

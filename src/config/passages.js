@@ -18,7 +18,7 @@ export const PASSAGES = [
       '0xGCG is a spatial loop where sound becomes data, data feeds a void, the void generates worlds, and each world survives as a patch in the room’s memory.',
       'The universe is not shown as a linear story. It is shown as a recurring operation.',
     ],
-    code: 'grow();\ncorrupt();\nglitch();\ndimension++;\nreturn void;',
+    code: 'init();\ngrow(); optimize();\noverfit(); glitch();\ndimension++;\nreturn void;',
   },
   {
     tag: 'layers', title: 'Every layer thinks it is the final world',
@@ -91,12 +91,13 @@ export const PASSAGES = [
     ],
   },
   {
-    tag: 'acts', title: 'The five acts',
+    tag: 'cycle', title: 'The cycle',
     paras: [
-      'Boot and idle. Feed and collapse. Grow and morphogenesis. Corrupt and optimization. Glitch and dimension plus plus.',
-      'The acts are the energetic process; the natural layers are the material skins.',
-      'The ending does not solve the story. It reveals the rule.',
+      'Init. Then grow, then optimize. Then overfit, then glitch.',
+      'Grow and optimize are a pair — the same gesture, getting better at itself. Overfit and glitch are a pair — the same collapse, the pattern reproducing through its own breakdown.',
+      'The acts are the energetic process; the natural layers are the material skins. The ending does not solve the story. It reveals the rule.',
     ],
+    code: 'init();\ngrow(); optimize();\noverfit(); glitch();\ndimension++;\nreturn void;',
   },
   {
     tag: 'journey', title: 'The journey',
@@ -104,7 +105,7 @@ export const PASSAGES = [
       'A void becomes particles. Particles become bonds. Bonds become membranes. Membranes become cells.',
       'Cells become roots. Roots become pipes. Pipes become circuits. Circuits become data.',
       'Data becomes code. Code becomes the creator. The creator becomes another layer of the loop.',
-      'Growth becomes optimization. Optimization becomes corruption. Corruption becomes glitch. The glitch opens a new dimension.',
+      'Growth becomes optimization. Optimization overfits. Overfitting becomes glitch. The glitch opens a new dimension.',
     ],
   },
   {
@@ -114,6 +115,6 @@ export const PASSAGES = [
       'One graph. Many skins.',
       'The room collapses back to the black seed. 0xGCG waits. The same story begins again.',
     ],
-    code: 'grow();\ncorrupt();\nglitch();\ndimension++;\nreturn void;',
+    code: 'init();\ngrow(); optimize();\noverfit(); glitch();\ndimension++;\nreturn void;',
   },
 ];

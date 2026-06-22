@@ -42,8 +42,10 @@ canvas{display:block}
 .act{color:var(--dim)}
 .counter{margin-left:auto;color:var(--dim)}
 .phase{padding:2px 8px;border-radius:99px;font-weight:700}
+.phase.init{background:rgba(220,220,220,.07);color:#9aa6ad}
 .phase.grow{background:rgba(220,220,220,.10);color:#b0b0b0}
-.phase.corrupt{background:rgba(220,220,220,.16);color:#d8d8d8}
+.phase.optimize{background:rgba(220,220,220,.13);color:#cfe0c8}
+.phase.overfit{background:rgba(220,220,220,.16);color:#d8c8b8}
 .phase.glitch{background:rgba(255,255,255,.20);color:#ffffff}
 
 #panel h1{font-size:34px;letter-spacing:.04em;line-height:1;color:#fff;
