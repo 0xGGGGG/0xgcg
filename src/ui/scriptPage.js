@@ -93,12 +93,16 @@ export class ScriptPage {
     this.counter.textContent = `${String(this.i + 1).padStart(2, '0')} / ${String(PASSAGES.length).padStart(2, '0')} · ${p.tag}`;
     this.paras = []; this.paraIdx = 0;
 
+    const hasMedia = !!p.media;
     const wrap = document.createElement('div');
-    wrap.className = 'sp-passage' + (p.hero ? ' hero' : '');
+    wrap.className = 'sp-passage' + (p.hero ? ' hero' : '') + (hasMedia ? ' has-media' : '');
+
+    // left column: the heading + description (what is spoken)
+    const main = document.createElement('div'); main.className = 'sp-main';
     const title = document.createElement('h2'); title.className = 'sp-title';
     this.titleEl = title; this.titleText = p.title;
     this.titleWords = this.wrapWords(p.title, title);
-    wrap.appendChild(title);
+    main.appendChild(title);
 
     const body = document.createElement('div'); body.className = 'sp-body';
     this.bodyEl = body;
@@ -112,13 +116,15 @@ export class ScriptPage {
       this.paras.push({ el: pEl, speak, words });
     });
     if (p.code) { const c = document.createElement('pre'); c.className = 'sp-codeblock'; c.textContent = p.code; body.appendChild(c); }
-    if (p.media) {
-      const list = Array.isArray(p.media) ? p.media : [p.media];
-      const row = document.createElement('div'); row.className = 'sp-media-row';
-      list.forEach((m) => row.appendChild(this.media(m)));
-      body.appendChild(row);
+    main.appendChild(body);
+    wrap.appendChild(main);
+
+    // right column (mobile: below): the sources / media
+    if (hasMedia) {
+      const aside = document.createElement('div'); aside.className = 'sp-aside';
+      (Array.isArray(p.media) ? p.media : [p.media]).forEach((m) => aside.appendChild(this.media(m)));
+      wrap.appendChild(aside);
     }
-    wrap.appendChild(body);
 
     this.stage.innerHTML = '';
     this.stage.appendChild(wrap);

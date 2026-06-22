@@ -461,7 +461,7 @@ body.mode-script #portal{display:none!important}
   mix-blend-mode:multiply}
 
 .sp-frame{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;
-  max-width:880px;margin:0 auto;padding:84px 28px 120px}
+  max-width:1180px;margin:0 auto;padding:84px 32px 116px}
 .sp-top{display:flex;align-items:baseline;gap:14px;margin-bottom:24px;flex:none}
 .sp-code{font-weight:700;letter-spacing:.18em;font-size:18px;color:#fff;text-shadow:0 0 16px rgba(255,255,255,.3)}
 .sp-counter{color:var(--dim);font-size:10px;letter-spacing:.24em;text-transform:uppercase}
@@ -498,6 +498,15 @@ body.mode-script #portal{display:none!important}
 .sp-codeblock{margin-top:18px;padding:14px 16px;border:1px solid rgba(255,255,255,.1);
   border-left:2px solid #9fe9c0;border-radius:4px;background:rgba(255,255,255,.03);
   color:#9fe9c0;font-size:13px;line-height:1.6;white-space:pre;max-width:520px}
+/* single-column passages keep a readable measure; media passages go wide */
+.sp-passage:not(.has-media) .sp-main{max-width:720px;margin:0 auto}
+.sp-passage.has-media{display:grid;grid-template-columns:1.05fr 1fr;gap:40px;align-items:center}
+.sp-passage.has-media .sp-main{max-width:none}
+.sp-aside{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (max-width:860px){
+  .sp-passage.has-media{grid-template-columns:1fr;gap:22px}  /* mobile: desc over media */
+}
+
 /* phases-with-color flow */
 .ph-flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
 .ph{padding:6px 13px;border-radius:99px;border:1px solid var(--c);color:var(--c);
@@ -508,12 +517,11 @@ body.mode-script #portal{display:none!important}
 .ph-pair i{font-style:normal;color:#8a8a8a;font-size:12px}
 .ph-arr{color:#5a5a5a;font-size:14px}
 
-/* media (youtube / wikipedia embeds), side by side */
-.sp-media-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
-.sp-media{flex:1 1 320px;margin:0;border:1px solid rgba(255,255,255,.14);border-radius:6px;
+/* media (youtube / wikipedia embeds) — stacked in the right column */
+.sp-media{width:100%;margin:0;border:1px solid rgba(255,255,255,.14);border-radius:6px;
   overflow:hidden;background:#000}
 .sp-media-youtube iframe,.sp-media video{display:block;width:100%;aspect-ratio:16/9;border:0}
-.sp-media-iframe iframe{display:block;width:100%;height:340px;border:0;background:#fff}
+.sp-media-iframe iframe{display:block;width:100%;height:300px;border:0;background:#fff}
 .sp-media .sp-cap{display:block;padding:6px 10px;color:#8a8a8a;font-size:11px;letter-spacing:.05em}
 
 .sp-nav{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;
