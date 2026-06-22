@@ -17,6 +17,7 @@ import { loadSection } from './ui/sectionView.js';
 import { Player } from './ui/player.js';
 import { linkTexture } from './ui/linkPreview.js';
 import { Soundtrack } from './core/soundtrack.js';
+import { Narrator, speechSeconds } from './ui/narrator.js';
 
 const app = document.getElementById('app');
 
@@ -73,10 +74,24 @@ const rig = new CameraRig(camera, controls, graph.stageNodes);
 
 let auto = false;
 let autoTimer = 0;
-const DWELL = 9; // seconds parked at a node before auto-advancing
+const DWELL = 9;      // minimum seconds parked at a node before auto-advancing
+let segDwell = DWELL; // current node's dwell (grows to fit the spoken narration)
 
 const overlay = new Overlay(document.getElementById('ui'));
 const soundtrack = new Soundtrack();
+const narrator = new Narrator();
+
+// the entity speaks the act (title → subtitle → body) with karaoke; the
+// soundtrack ducks underneath while it talks. The dwell stretches to fit the
+// narration so the progress animation keeps running and the line still finishes.
+function narrateAct() {
+  const els = [overlay.panel.querySelector('h1'), overlay.panel.querySelector('h2'), overlay.panel.querySelector('.body')];
+  const text = els.map((e) => e ? e.textContent : '').join(' . ');
+  segDwell = Math.max(DWELL, speechSeconds(text));
+  soundtrack.duck(true);
+  narrator.speak(els, { onDone: () => soundtrack.duck(false) });
+}
+function stopNarration() { narrator.stop(); soundtrack.duck(false); }
 
 // Core timeline transport (all acts side by side, each with its waveform)
 const corePlayer = new Player({
@@ -90,13 +105,14 @@ corePlayer.setTracks(STAGES.map((s) => soundtrack.peaks(s.id)));
 
 let active = 0;
 let resumeOnArrive = false;
-rig.onDepart = () => overlay.hide();
+rig.onDepart = () => { overlay.hide(); stopNarration(); };
 rig.onArrive = (i) => {
   active = i;
   autoTimer = 0;            // dwell starts on arrival, so the tour paces evenly
   overlay.show(i);
   corePlayer.setActive(i);
   if (resumeOnArrive) { resumeOnArrive = false; soundtrack.resume(); soundtrack.play(STAGES[i].id, 0); }
+  if (auto) narrateAct();  // entity speaks once the overlay is visible
 };
 
 // navigate: stop, park the playhead at the mark's start, fly, and only resume
@@ -116,8 +132,8 @@ function setAuto(on) {
   if (on) {
     soundtrack.resume();
     if (rig.anim) resumeOnArrive = true;
-    else soundtrack.play(STAGES[active].id, soundtrack.curId === STAGES[active].id ? soundtrack.pausedAt : 0);
-  } else { soundtrack.pause(); resumeOnArrive = false; }
+    else { soundtrack.play(STAGES[active].id, soundtrack.curId === STAGES[active].id ? soundtrack.pausedAt : 0); narrateAct(); }
+  } else { soundtrack.pause(); resumeOnArrive = false; stopNarration(); }
 }
 
 // ---- view mode: 'script' (index) | 'core' (Timeline storyboard) | 'layout' ----
@@ -399,14 +415,14 @@ function frame() {
 
   // dwell only counts once the camera has arrived; while flying the playhead
   // holds at the segment start (parity with Layout — no restart-on-arrival jump)
-  if (auto && !rig.anim) {
+  if (auto && !rig.anim) {  // progress runs continuously; the dwell is sized to fit the narration
     autoTimer += dt;
-    if (autoTimer > DWELL) {
+    if (autoTimer > segDwell) {
       autoTimer = 0;
       go((active + 1) % STAGES.length);
     }
   }
-  corePlayer.setProgress(active, rig.anim ? 0 : Math.min(1, autoTimer / DWELL));
+  corePlayer.setProgress(active, rig.anim ? 0 : Math.min(1, autoTimer / segDwell));
 
   // link-inspection dolly toward the active soma
   if (linkRestPos) {

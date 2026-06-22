@@ -59,6 +59,23 @@ export class ScriptPage {
     el.querySelectorAll('.sp-btn').forEach((b) => b.addEventListener('click', () => this.action(b.dataset.a)));
     el.querySelectorAll('.sp-door').forEach((b) => b.addEventListener('click', () => { this.stop(); this.onEnter && this.onEnter(b.dataset.go); }));
 
+    // left rail: one tick per passage, hover reveals its title, jumps on click
+    const rail = document.createElement('nav'); rail.className = 'sp-rail'; rail.setAttribute('aria-label', 'Sections');
+    PASSAGES.forEach((p, i) => {
+      const t = document.createElement('button'); t.className = 'sp-tick'; t.dataset.i = i;
+      t.innerHTML = `<i></i><span class="sp-tick-label">${String(i + 1).padStart(2, '0')} · ${p.title}</span>`;
+      t.addEventListener('click', () => this.goTo(i));
+      rail.appendChild(t);
+    });
+    el.appendChild(rail);
+    this.ticks = [...rail.querySelectorAll('.sp-tick')];
+    this._onHash = () => {
+      if (!el.classList.contains('show')) return;
+      const idx = PASSAGES.findIndex((p) => p.tag === location.hash.replace('#', ''));
+      if (idx >= 0 && idx !== this.i) this.goTo(idx);
+    };
+    window.addEventListener('hashchange', this._onHash);
+
     if (this.tts) {
       this.pickVoice();
       this.tts.onvoiceschanged = () => this.pickVoice();
@@ -92,6 +109,8 @@ export class ScriptPage {
     this.hero = !!p.hero;
     this.counter.textContent = `${String(this.i + 1).padStart(2, '0')} / ${String(PASSAGES.length).padStart(2, '0')} · ${p.tag}`;
     this.paras = []; this.paraIdx = 0;
+    if (this.ticks) this.ticks.forEach((t, k) => t.classList.toggle('on', k === this.i));
+    try { history.replaceState(history.state, '', location.pathname + '#' + p.tag); } catch {}
 
     const hasMedia = !!p.media;
     const wrap = document.createElement('div');
@@ -182,7 +201,12 @@ export class ScriptPage {
     else if (m.type === 'iframe') box.innerHTML = `<iframe src="${m.src}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
     else if (m.type === 'video') box.innerHTML = `<video src="${m.src}" controls playsinline></video>`;
     else if (m.type === 'html') box.innerHTML = m.html;
-    if (m.caption) box.insertAdjacentHTML('beforeend', `<span class="sp-cap">${m.caption}</span>`);
+    if (m.caption) {
+      const href = m.type === 'youtube' ? `https://www.youtube.com/watch?v=${m.src}` : (m.src || '');
+      box.insertAdjacentHTML('beforeend', href
+        ? `<a class="sp-cap" href="${href}" target="_blank" rel="noopener">${m.caption} <b>↗ open</b></a>`
+        : `<span class="sp-cap">${m.caption}</span>`);
+    }
     return box;
   }
 
@@ -262,6 +286,13 @@ export class ScriptPage {
       }
     }
   }
+
+  goTo(i) {
+    if (i === this.i) return;
+    this.stopSpeak();
+    this.render(i); // render auto-narrates when playing
+  }
+
   stopSpeak() { if (this.tts) this.tts.cancel(); clearTimeout(this.advTimer); clearTimeout(this._revealTimer); }
   stop() { this.playing = false; this.stopSpeak(); }
 
@@ -361,7 +392,8 @@ export class ScriptPage {
     this.resize();
     if (!this._onR) { this._onR = () => this.resize(); addEventListener('resize', this._onR); }
     if (!this.raf) { const loop = () => { this.draw(); this.raf = requestAnimationFrame(loop); }; this.raf = requestAnimationFrame(loop); }
-    this.render(0); // (re)play the 0xGCG boot reveal on entry
+    const hashIdx = PASSAGES.findIndex((p) => p.tag === location.hash.replace('#', ''));
+    this.render(hashIdx > 0 ? hashIdx : 0); // honor #section anchor, else replay boot
   }
   hide() {
     this.el.classList.remove('show');

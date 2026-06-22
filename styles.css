@@ -528,6 +528,33 @@ body.mode-script #portal{display:none!important}
 .sp-media-youtube iframe,.sp-media video{display:block;width:100%;aspect-ratio:16/9;border:0}
 .sp-media-iframe iframe{display:block;width:100%;height:300px;border:0;background:#fff}
 .sp-media .sp-cap{display:block;padding:6px 10px;color:#8a8a8a;font-size:11px;letter-spacing:.05em}
+a.sp-cap{text-decoration:none;transition:color .15s}
+a.sp-cap:hover{color:#dfeee7}
+a.sp-cap b{color:#27e0a0;font-weight:600;white-space:nowrap}
+a.sp-cap:hover b{text-shadow:0 0 12px rgba(39,224,160,.55)}
+
+/* left rail section nav */
+.sp-rail{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:4;
+  display:flex;flex-direction:column;gap:10px;padding:14px 16px 14px 14px}
+.sp-tick{position:relative;display:flex;align-items:center;background:none;border:0;
+  cursor:pointer;padding:4px 0}
+.sp-tick i{display:block;width:20px;height:2px;border-radius:2px;background:#3a4a44;
+  transition:width .18s,background .18s,box-shadow .18s}
+.sp-tick:hover i{width:30px;background:#9fe9cf}
+.sp-tick.on i{width:34px;background:#27e0a0;box-shadow:0 0 12px rgba(39,224,160,.7)}
+.sp-tick-label{position:absolute;left:42px;white-space:nowrap;color:#cfe0d8;
+  font-size:11px;letter-spacing:.04em;background:rgba(4,6,10,.92);
+  border:1px solid rgba(39,224,160,.25);border-radius:5px;padding:4px 9px;
+  opacity:0;transform:translateX(-6px);pointer-events:none;transition:opacity .15s,transform .15s}
+.sp-tick:hover .sp-tick-label,.sp-tick.on .sp-tick-label{opacity:1;transform:none}
+@media (max-width:860px){.sp-rail{top:auto;bottom:64px;left:50%;transform:translateX(-50%);
+  flex-direction:row}.sp-tick i{width:14px}.sp-tick:hover i,.sp-tick.on i{width:14px;height:4px}
+  .sp-tick-label{left:50%;bottom:22px;transform:translateX(-50%)}}
+
+/* shared karaoke highlight (Timeline overlay + Layout card narration) */
+.kw{transition:color .12s,text-shadow .12s}
+.kw.done{color:#cfe0d8}
+.kw.lit{color:#fff;text-shadow:0 0 16px rgba(180,255,210,.6)}
 
 .sp-nav{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;
   gap:10px;padding:16px 24px;background:linear-gradient(0deg,rgba(4,6,10,.95),transparent)}

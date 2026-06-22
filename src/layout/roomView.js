@@ -6,6 +6,7 @@ import { buildSection } from '../ui/sectionView.js';
 import { CircularPlayer } from '../ui/circularPlayer.js';
 import { linkTexture } from '../ui/linkPreview.js';
 import { createArrowField } from './arrows.js';
+import { Narrator, speechSeconds } from '../ui/narrator.js';
 
 const PHASE_COLOR = { meta: '#8be8a0', data: '#bfd0ff', loop: '#ff7ad9', patch: '#e8d48b', return: '#b888ff' };
 
@@ -209,6 +210,10 @@ export function createRoomView(renderer) {
     { key: 'patch',  mesh: 'LeftWall',  label: 'THE PATCH', sub: 'remembers · slides front → rear, dissolves to Meta', dur: 5.0 },
   ];
   const cyc = { on: true, i: 0, t: 0 };
+  let segDur = 5;          // current phase dwell (grows to fit the spoken narration)
+  let intro = null;        // opening sequence: hold on the framed room, then fly to Meta
+  let activated = false;   // Layout is the live mode
+  const INTRO_HOLD = 2.5;  // seconds parked at the initial framing before flying in
   const em = { data: 0, patch: 0, loop: 0, meta: 0 };       // eased emphasis 0..1
   const emT = { data: 0, patch: 0, loop: 0, meta: 0 };       // targets
 
@@ -219,11 +224,20 @@ export function createRoomView(renderer) {
   const SHORT = { meta: 'META', data: 'DATA', loop: 'LOOP', patch: 'PATCH' };
   const player = new CircularPlayer({
     steps: CYCLE.map((c) => ({ key: c.key, label: c.label, short: SHORT[c.key], sub: c.sub, color: PHASE_COLOR[c.key], dur: c.dur })),
-    onSelect: (i) => { cyc.i = i; cyc.t = 0; cycleEnter(i, { fly: true }); },
-    onToggle: (on) => { cyc.on = on; },
+    onSelect: (i) => { intro = null; cyc.i = i; cyc.t = 0; cycleEnter(i, { fly: true }); },
+    onToggle: (on) => { cyc.on = on; if (on) narrateCard(); else narrator.stop(); },
     playing: true,
   });
   player.mount(document.getElementById('player-mount'));
+  const narrator = new Narrator();
+  // the entity speaks the active surface (label → body) with karaoke; the phase
+  // dwell stretches to fit so the progress ring keeps turning and the line finishes
+  function narrateCard() {
+    const title = card.querySelector('.rc-title'), body = card.querySelector('.rc-body');
+    const text = (title ? title.textContent : '') + ' . ' + (body ? body.textContent : '');
+    segDur = Math.max(CYCLE[cyc.i].dur, speechSeconds(text));
+    narrator.speak([title, body]);
+  }
 
   // ---- load the model -----------------------------------------------
   const loader = new FBXLoader();
@@ -259,7 +273,10 @@ export function createRoomView(renderer) {
     addGround();
     buildArrows();
     frameAll();
-    cycleEnter(cyc.i, { fly: false }); // start the loop on Meta (don't yank the camera)
+    // if Layout is already the live mode, run the opening sequence now that the
+    // model exists; otherwise just pre-stage Meta silently for the next entry
+    if (activated) startIntro();
+    else cycleEnter(cyc.i, { fly: false });
     document.getElementById('layout-loading')?.remove();
   }
 
@@ -354,7 +371,7 @@ export function createRoomView(renderer) {
   }
 
   function pin(i) {
-    cyc.on = false; player.setPlaying(false); // manual inspection pauses the loop
+    intro = null; cyc.on = false; player.setPlaying(false); narrator.stop(); // manual inspection pauses the loop
     if (pinned === i) { pinned = -1; highlight(i, false); hideCard(); return; }
     if (pinned >= 0) highlight(pinned, false);
     pinned = i;
@@ -368,7 +385,7 @@ export function createRoomView(renderer) {
     card.className = `rc-${def.key}`;
     card.innerHTML = `
       <div class="rc-meta"><span>${def.tag}</span><span class="rc-key">${def.key}</span></div>
-      <h4>${def.label} <small>· ${def.sub}</small></h4>
+      <h4><span class="rc-title">${def.label}</span> <small>· ${def.sub}</small></h4>
       ${def.role ? `<p class="rc-role">${def.role}</p>` : ''}
       <p class="rc-body">${def.body}</p>
       ${def.also ? `<div class="rc-also">${def.also.map((a) => `<span>${a}</span>`).join('')}</div>` : ''}
@@ -499,7 +516,9 @@ export function createRoomView(renderer) {
       const k = surfaces.indexOf(surfBy(c.mesh)); if (k >= 0) highlight(k, true);
     }
     const def = SURFACES.find((d) => d.mesh === c.mesh);
+    segDur = c.dur; // base dwell; narrateCard grows it to fit the narration
     if (def) showCard(def);
+    if (cyc.on) narrateCard(); else narrator.stop(); // speak only while the loop is playing
     if (fly) focusForPhase(c.key);
     player.setActive(i);
   }
@@ -538,7 +557,20 @@ export function createRoomView(renderer) {
   }
 
   // ---- public API ---------------------------------------------------
+  // open on the framed room, hold, fly to Meta, then begin Meta's stage on arrival
+  function startIntro() {
+    if (!surfaces.length) return; // load handler will re-run this once the model is in
+    hideCard();
+    narrator.stop();
+    pinned = -1;
+    cyc.i = 0; cyc.t = 0;
+    frameAll();                 // initial vantage: the whole room
+    player.setActive(cyc.i);
+    intro = { t: 0, flown: false };
+  }
+
   function activate() {
+    activated = true;
     controls.enabled = true;
     markerWrap.style.display = 'block';
     player.el.style.display = 'flex';
@@ -546,11 +578,13 @@ export function createRoomView(renderer) {
     secToggle.style.display = 'block';
     cyc.on = true;
     player.setPlaying(true);
-    if (surfaces.length) cycleEnter(cyc.i, { fly: false });
+    startIntro();
     onResize();
     clock.getDelta(); // reset
   }
   function deactivate() {
+    activated = false;
+    intro = null;
     controls.enabled = false;
     markerWrap.style.display = 'none';
     player.el.style.display = 'none';
@@ -558,6 +592,7 @@ export function createRoomView(renderer) {
     secToggle.style.display = 'none';
     toggleSection(false);
     hideCard();
+    narrator.stop();
   }
 
   function onResize() {
@@ -589,13 +624,20 @@ export function createRoomView(renderer) {
     }
     if (viewHelper.animating) viewHelper.update(dt);
 
+    // opening sequence: hold on the framed room, fly to Meta, start its stage on arrival
+    if (intro) {
+      intro.t += dt;
+      if (!intro.flown && intro.t >= INTRO_HOLD) { intro.flown = true; focusForPhase('meta'); }
+      else if (intro.flown && !flyAnim) { intro = null; cyc.t = 0; cycleEnter(cyc.i, { fly: false }); }
+    }
+
     // advance the loop cycle + ease emphasis
     tAcc += dt;
-    if (cyc.on && surfaces.length && !flyAnim) {
+    if (cyc.on && surfaces.length && !flyAnim && !intro) {  // progress runs continuously; dwell is sized to the narration
       cyc.t += dt;
-      if (cyc.t >= CYCLE[cyc.i].dur) { cyc.t = 0; cyc.i = (cyc.i + 1) % CYCLE.length; cycleEnter(cyc.i); }
+      if (cyc.t >= segDur) { cyc.t = 0; cyc.i = (cyc.i + 1) % CYCLE.length; cycleEnter(cyc.i); }
     }
-    player.setProgress(cyc.i, flyAnim ? 0 : cyc.t / CYCLE[cyc.i].dur);
+    player.setProgress(cyc.i, flyAnim ? 0 : cyc.t / segDur);
     for (const k of ['data', 'patch', 'loop', 'meta']) em[k] += (emT[k] - em[k]) * Math.min(1, dt * 3);
 
     updateArrows(dt);

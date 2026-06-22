@@ -58,6 +58,14 @@ export class Soundtrack {
   }
   async resume() { this._ensure(); if (this.ctx.state === 'suspended') { try { await this.ctx.resume(); } catch {} } }
 
+  // lower the music under spoken narration, restore afterwards
+  duck(on) {
+    if (!this.gain || !this.ctx) return;
+    const g = this.gain.gain;
+    try { g.cancelScheduledValues(this.ctx.currentTime); g.setTargetAtTime(on ? 0.2 : 0.7, this.ctx.currentTime, 0.15); }
+    catch { g.value = on ? 0.2 : 0.7; }
+  }
+
   _buffer(id) {
     if (this.buffers[id]) return this.buffers[id];
     const ctx = this._ensure();
