@@ -115,7 +115,13 @@ export class ScriptPage {
       body.appendChild(pEl);
       this.paras.push({ el: pEl, speak, words });
     });
+    if (p.html) { const d = document.createElement('div'); d.className = 'sp-inline'; d.innerHTML = p.html; body.appendChild(d); }
     if (p.code) { const c = document.createElement('pre'); c.className = 'sp-codeblock'; c.textContent = p.code; body.appendChild(c); }
+    if (p.link) {
+      const a = document.createElement('button'); a.className = 'sp-link'; a.textContent = p.link.label;
+      a.addEventListener('click', () => { this.stop(); this.onEnter && this.onEnter(p.link.go); });
+      body.appendChild(a);
+    }
     main.appendChild(body);
     wrap.appendChild(main);
 

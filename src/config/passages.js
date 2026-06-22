@@ -17,10 +17,13 @@ export const PASSAGES = [
     ],
   },
   {
-    tag: 'concept', title: 'One-line concept',
+    tag: 'concept', title: 'Concept',
     paras: [
-      '0xGCG is a spatial loop where sound becomes data, data feeds a void, the void generates worlds, and each world survives as a patch in the room’s memory.',
-      'The universe is not shown as a linear story. It is shown as a recurring operation.',
+      '0xGCG is a meta-cyclic narrative of any system.',
+      {
+        text: 'It grows. It overfits. It corrupts. It glitches. And then it [trans|as|des]cends — into the next dimension, the same story again.',
+        speak: 'It grows. It overfits. It corrupts. It glitches. And then it transcends, ascends, descends, into the next dimension, the same story again.',
+      },
     ],
     code: 'init();\ngrow(); optimize();\noverfit(); glitch();\ndimension++;\nreturn void;',
   },
@@ -31,22 +34,6 @@ export const PASSAGES = [
       'The glitch reveals that all of them are the same loop, rendered at different scales.',
       'The glitch is not the end of the pattern. The glitch is how the pattern reproduces.',
     ],
-  },
-  {
-    tag: 'phases', title: 'The phases',
-    paras: [
-      'Init. Then grow, then optimize. Then overfit, then glitch. Then again.',
-      'Grow and optimize are a pair — the same gesture getting better at itself. Overfit and glitch are a pair — the same collapse, the pattern reproducing through its own breakdown.',
-    ],
-    media: {
-      type: 'html',
-      html:
-        '<div class="ph-flow">' +
-        '<span class="ph" style="--c:#5b7184">init</span><b class="ph-arr">→</b>' +
-        '<span class="ph-pair"><span class="ph" style="--c:#27e0a0">grow</span><i>↔</i><span class="ph" style="--c:#8be84b">optimize</span></span><b class="ph-arr">→</b>' +
-        '<span class="ph-pair"><span class="ph" style="--c:#e0742a">overfit</span><i>↔</i><span class="ph" style="--c:#ff2bd6">glitch</span></span>' +
-        '<b class="ph-arr">↺</b></div>',
-    },
   },
   {
     tag: 'paperclips', title: 'Universal Paperclips',
