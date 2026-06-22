@@ -8,10 +8,13 @@
 
 export class Player {
   // steps: [{ key, label, sub, color, dur }]
-  constructor({ steps, onSelect, onToggle, playing = true }) {
+  // opts.waveform → ruler shows the active track's waveform (voice-memo scrubber)
+  constructor({ steps, onSelect, onToggle, onSeek, waveform = false, playing = true }) {
     this.steps = steps;
     this.onSelect = onSelect;
     this.onToggle = onToggle;
+    this.onSeek = onSeek;
+    this.waveform = waveform;
     this.playing = playing;
     this.active = 0;
     this.total = steps.reduce((s, x) => s + (x.dur || 1), 0);
@@ -25,14 +28,25 @@ export class Player {
           `<button class="pl-step" data-i="${i}" style="--c:${s.color}"><i></i><span>${s.label}</span></button>`)
           .join('<b class="pl-arrow">→</b>')}</div>` +
       `</div>` +
-      `<div class="pl-ruler"><div class="pl-track"></div><div class="pl-head"></div></div>` +
+      `<div class="pl-ruler${waveform ? ' is-wave' : ''}">` +
+        (waveform ? `<canvas class="pl-wave"></canvas>` : `<div class="pl-track"></div>`) +
+        `<div class="pl-head"></div></div>` +
       `<div class="pl-cap"><b></b><span></span></div>`;
     this.el = el;
     this.head = el.querySelector('.pl-head');
     this.track = el.querySelector('.pl-track');
     this.cap = el.querySelector('.pl-cap');
+    this.canvas = el.querySelector('.pl-wave');
 
-    this.buildRuler();
+    if (waveform) {
+      const ruler = el.querySelector('.pl-ruler');
+      ruler.addEventListener('pointerdown', (e) => {
+        const r = ruler.getBoundingClientRect();
+        this.onSeek && this.onSeek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)));
+      });
+    } else {
+      this.buildRuler();
+    }
 
     el.querySelector('.pl-toggle').addEventListener('click', () => {
       this.setPlaying(!this.playing);
@@ -104,6 +118,30 @@ export class Player {
   setPlaying(on) {
     this.playing = on;
     this.el.querySelector('.pl-toggle').textContent = on ? '❚❚' : '▶';
+  }
+
+  // ---- waveform-scrubber mode ----
+  setTrack(peaks, color) {
+    this._peaks = peaks; this._waveColor = color || '#cdd8e4';
+    this.drawWave();
+  }
+  setHead(frac) { this.head.style.left = `${Math.max(0, Math.min(1, frac)) * 100}%`; }
+
+  drawWave() {
+    const c = this.canvas, peaks = this._peaks;
+    if (!c || !peaks) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = c.clientWidth || c.parentElement.clientWidth || 600, h = c.clientHeight || 28;
+    c.width = w * dpr; c.height = h * dpr;
+    const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    const n = peaks.length, bw = w / n, mid = h / 2;
+    g.fillStyle = this._waveColor;
+    for (let i = 0; i < n; i++) {
+      const ph = Math.max(1, peaks[i] * (h - 2));
+      g.globalAlpha = 0.35 + peaks[i] * 0.55;
+      g.fillRect(i * bw, mid - ph / 2, Math.max(1, bw - 1), ph);
+    }
+    g.globalAlpha = 1;
   }
 
   mount(parent) { parent.appendChild(this.el); return this; }

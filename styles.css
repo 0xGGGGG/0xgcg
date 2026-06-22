@@ -292,6 +292,9 @@ body.mode-layout #layout-loading{display:block}
 
 /* the ruler */
 .pl-ruler{position:relative;width:100%;height:16px}
+.pl-ruler.is-wave{height:30px;border:1px solid rgba(255,255,255,.1);border-radius:3px;
+  background:rgba(255,255,255,.02);cursor:pointer;overflow:hidden}
+.pl-wave{position:absolute;inset:0;width:100%;height:100%;display:block}
 .pl-track{position:absolute;inset:0;border-radius:2px;
   background:linear-gradient(0deg,rgba(255,255,255,.06),rgba(255,255,255,.03));
   border:1px solid rgba(255,255,255,.1);overflow:hidden}
