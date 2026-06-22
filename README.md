@@ -63,8 +63,9 @@ CDN, so you need network access on first load.
 
 ## Routes
 
-- `/` → the **intro** (SCRIPT §1 title boot) with doors to Core & Layout.
-- `/core` → the Core view · `/layout` → the Layout view.
+- `/` → the **intro** (SCRIPT §1 title boot) with doors to Timeline & Layout.
+- `/core` → the **Core** page (about / manifesto / stage-modes / references).
+- `/timeline` → the **Timeline** (neuron storyboard) · `/layout` → the **Layout** view.
 - The view switcher updates the URL; every trigger re-homes the viewpoint.
 
 ## Two views

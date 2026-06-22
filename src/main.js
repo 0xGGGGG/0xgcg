@@ -17,6 +17,7 @@ import { loadSection } from './ui/sectionView.js';
 import { Player } from './ui/player.js';
 import { linkTexture } from './ui/linkPreview.js';
 import { Soundtrack } from './core/soundtrack.js';
+import { AboutPage } from './ui/aboutPage.js';
 
 const app = document.getElementById('app');
 
@@ -126,11 +127,13 @@ let room = null;  // lazily created RoomView (loads the FBX on first open)
 let intro = null; // the §1 title page (index)
 const navBtns = [...document.querySelectorAll('#view-nav button')];
 
-// path <-> mode routing.  / -> intro (title) , /core -> core , /layout -> layout
+// routing:  / -> intro · /core -> Core (about) · /timeline -> Timeline (storyboard) · /layout -> Layout
+const aboutPage = new AboutPage({ onEnter: (m) => setMode(m) });
 const pathToMode = (p) => {
   const x = p.replace(/\/+$/, '');
   if (x === '/layout') return 'layout';
-  if (x === '/core') return 'core';
+  if (x === '/timeline') return 'core';
+  if (x === '/core') return 'about';
   return 'intro';
 };
 
@@ -149,13 +152,21 @@ function setMode(m, { push = true, reset = true } = {}) {
   mode = m;
   document.body.classList.toggle('mode-layout', m === 'layout');
   document.body.classList.toggle('mode-intro', m === 'intro');
+  document.body.classList.toggle('mode-about', m === 'about');
   navBtns.forEach((b) => b.classList.toggle('on', b.dataset.view === m));
   corePlayer.el.style.display = m === 'core' ? 'flex' : 'none';
+  aboutPage.hide();
   if (m === 'intro') {
     setAuto(false);
     controls.enabled = false;
     if (room) room.deactivate();
     if (intro) intro.show();
+  } else if (m === 'about') {
+    setAuto(false);
+    controls.enabled = false;
+    if (room) room.deactivate();
+    if (intro) intro.hide();
+    aboutPage.show();
   } else if (m === 'layout') {
     if (intro) intro.hide();
     setAuto(false);
@@ -163,14 +174,14 @@ function setMode(m, { push = true, reset = true } = {}) {
     if (!room) room = createRoomView(renderer);
     room.activate();
     if (reset) room.frameRoom(); // no-op until the FBX has loaded, then re-homes
-  } else { // core
+  } else { // core (the Timeline storyboard)
     if (intro) intro.hide();
     if (room) room.deactivate();
     controls.enabled = true;
     if (reset) resetCore();
   }
   if (push) {
-    const path = m === 'layout' ? '/layout' : m === 'core' ? '/core' : '/';
+    const path = m === 'layout' ? '/layout' : m === 'core' ? '/timeline' : m === 'about' ? '/core' : '/';
     if (location.pathname !== path) history.pushState({ mode: m }, '', path);
   }
 }
@@ -305,8 +316,9 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 // ---- keyboard ---------------------------------------------------------
 addEventListener('keydown', (e) => {
   if (mode === 'intro') {
-    if (e.key === 'Enter' || e.key === 'c') { setMode('core'); return; }
+    if (e.key === 'Enter' || e.key === 't') { setMode('core'); return; }   // Timeline
     if (e.key === 'l') { setMode('layout'); return; }
+    if (e.key === 'c') { setMode('about'); return; }                       // Core (about)
     return; // intro owns the keyboard until a door is chosen
   }
   if (e.key === 'Escape') { cosmos.hide(); return; }
@@ -317,7 +329,8 @@ addEventListener('keydown', (e) => {
     return;
   }
   if (e.key.toLowerCase() === 'h') { document.getElementById('ui').classList.toggle('hidden'); return; }
-  if (e.key === 'c') { setMode('core'); return; }
+  if (e.key === 'c') { setMode('about'); return; }    // Core (about)
+  if (e.key === 't') { setMode('core'); return; }     // Timeline
   if (e.key === 'l') { setMode('layout'); return; }
   if (mode !== 'core') return;
   if (e.key === 'ArrowRight') { setAuto(false); go((active + 1) % STAGES.length); }
@@ -370,8 +383,8 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
-  // ---- Intro mode: the title page is pure DOM; blank the canvas behind it
-  if (mode === 'intro') {
+  // ---- Intro / Core(about): pure DOM pages; blank the canvas behind them
+  if (mode === 'intro' || mode === 'about') {
     renderer.setRenderTarget(null);
     renderer.autoClear = true;
     renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);

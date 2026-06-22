@@ -443,6 +443,63 @@ body.mode-layout #layout-loading{display:block}
 }
 
 /* ========================================================================
+   Core / about page
+   ===================================================================== */
+body.mode-about #panel,
+body.mode-about #player-mount,
+body.mode-about #markers,
+body.mode-about #portal{display:none!important}
+#about{position:fixed;inset:0;z-index:9;overflow-y:auto;opacity:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% -10%,rgba(20,28,42,.6),#05070a 60%);
+  transition:opacity .4s}
+#about.show{opacity:1;pointer-events:auto}
+.ab-wrap{max-width:920px;margin:0 auto;padding:96px 28px 80px}
+.ab-head{margin-bottom:38px}
+.ab-code{font-weight:700;letter-spacing:.18em;font-size:30px;color:#fff;text-shadow:0 0 22px rgba(255,255,255,.25)}
+.ab-title{color:var(--dim);letter-spacing:.3em;font-size:12px;text-transform:uppercase;margin-left:10px}
+.ab-tag{color:#bdbdbd;font-size:15px;letter-spacing:.14em;margin-top:10px}
+.ab-sec{margin-bottom:36px}
+.ab-sec h2{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);
+  margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.1)}
+.ab-sec p{color:#c4c4c4;font-size:14px;line-height:1.7;max-width:740px}
+.ab-sec p b{color:#fff;font-weight:600}
+.ab-note{color:#8a8a8a!important;font-size:12.5px!important;margin-bottom:14px}
+.ab-code-block{margin-top:14px;padding:14px 16px;border:1px solid rgba(255,255,255,.1);
+  border-left:2px solid var(--accent);border-radius:4px;background:rgba(255,255,255,.03);
+  color:#9fe9c0;font-size:13px;line-height:1.6;white-space:pre}
+
+.ab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.ab-card{padding:14px 16px;border-radius:6px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.1);border-top:2px solid var(--c)}
+.ab-card b{display:block;color:#fff;font-size:13px;letter-spacing:.04em;margin-bottom:6px}
+.ab-card b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:99px;
+  background:var(--c);box-shadow:0 0 8px var(--c);margin-right:8px;vertical-align:middle}
+.ab-card span{color:#b0b0b0;font-size:12px;line-height:1.55}
+
+.ab-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.ab-mode{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:baseline;
+  padding:9px 12px;border-radius:5px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07)}
+.ab-mode i{font-style:normal;font-size:18px;color:#cfe0ff;text-align:center}
+.ab-mode b{color:#eaeaea;font-size:13px;letter-spacing:.06em}
+.ab-mode span{grid-column:2;color:#9a9a9a;font-size:11.5px;line-height:1.5}
+
+.ab-refs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ab-ref{display:flex;flex-direction:column;gap:4px;padding:12px 13px;border-radius:6px;
+  text-decoration:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);
+  border-left:2px solid var(--c);transition:background .2s,border-color .2s,transform .15s}
+.ab-ref:hover{background:rgba(255,255,255,.09);border-color:#fff;transform:translateY(-2px)}
+.ab-ref-dom{color:var(--c);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
+.ab-ref-lbl{color:#e2e2e2;font-size:12.5px;line-height:1.4}
+.ab-ref-stage{color:#6a6a6a;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;margin-top:2px}
+
+.ab-foot{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
+.ab-enter{font:inherit;font-size:13px;letter-spacing:.1em;color:#fff;cursor:pointer;
+  padding:13px 22px;border-radius:5px;border:1px solid rgba(255,255,255,.3);
+  background:rgba(255,255,255,.06);transition:all .2s}
+.ab-enter:hover{border-color:#fff;box-shadow:0 0 22px rgba(255,255,255,.2)}
+.ab-enter.ghost{background:none;color:#bdbdbd}
+
+/* ========================================================================
    §1 Intro / title page (the index)
    ===================================================================== */
 body.mode-intro #ui,

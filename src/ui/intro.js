@@ -42,7 +42,7 @@ export class Intro {
             <p class="in-tag">— Same story over and over again.</p>
             <p class="in-credit">a short script made by AI and its human; about the universe, the core loop.</p>
             <nav class="in-doors">
-              <button class="in-door" data-go="core">[ enter <b>CORE</b> ▸ ]<small>the neuron storyboard</small></button>
+              <button class="in-door" data-go="core">[ enter <b>TIMELINE</b> ▸ ]<small>the neuron storyboard</small></button>
               <button class="in-door" data-go="layout">[ enter <b>LAYOUT</b> ▸ ]<small>the venue blueprint</small></button>
             </nav>
             <p class="in-hint">↵ enter · click a door · or press <kbd>C</kbd> / <kbd>L</kbd></p>
