@@ -5,6 +5,7 @@ import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { buildSection } from '../ui/sectionView.js';
 import { CircularPlayer } from '../ui/circularPlayer.js';
 import { linkTexture } from '../ui/linkPreview.js';
+import { createArrowField } from './arrows.js';
 
 const PHASE_COLOR = { meta: '#8be8a0', data: '#bfd0ff', loop: '#ff7ad9', patch: '#e8d48b', return: '#b888ff' };
 
@@ -195,8 +196,7 @@ export function createRoomView(renderer) {
   const surfaces = []; // { def, mesh, center, normal, marker, fill, edges, baseEdgeOpacity }
   let root = null;     // the scaled/centered model group
   let bounds = null;   // THREE.Box3 of the fitted model
-  let flow = null;     // floor data-flow particles (rear -> front)
-  let patchWave = null;// side-wall history particles (front -> rear)
+  let arrowFields = [];// per-surface oriented arrow flows
   let tAcc = 0;        // time accumulator for pulses
 
   // ---- the loop cycle (SCRIPT §2 causal chain) ----------------------
@@ -257,8 +257,7 @@ export function createRoomView(renderer) {
 
     bounds = new THREE.Box3().setFromObject(root);
     addGround();
-    buildFlow();
-    buildPatchWave();
+    buildArrows();
     frameAll();
     cycleEnter(cyc.i, { fly: false }); // start the loop on Meta (don't yank the camera)
     document.getElementById('layout-loading')?.remove();
@@ -464,91 +463,24 @@ export function createRoomView(renderer) {
     scene.add(grid);
   }
 
-  // Floor "Data" current: faint points drifting rear -> front (Back -> Front),
-  // spread laterally across the floor width — the soundtrack made visible.
-  function buildFlow() {
-    const back = surfaces.find((s) => s.def.mesh === 'BackWall');
-    const front = surfaces.find((s) => s.def.mesh === 'FrontWall');
-    const floor = surfaces.find((s) => s.def.mesh === 'Floor');
-    if (!back || !front || !floor) return;
-    const N = 280;
-    const a = back.center.clone();
-    const b = front.center.clone();
-    const y = new THREE.Box3().setFromObject(floor.mesh).max.y + 0.3;
-    a.y = y; b.y = y;
-    // in-plane perpendicular to the rear->front axis
-    const dir = b.clone().sub(a).setY(0).normalize();
-    const perp = new THREE.Vector3(-dir.z, 0, dir.x);
-    const floorSize = new THREE.Box3().setFromObject(floor.mesh).getSize(new THREE.Vector3());
-    const halfWidth = Math.max(floorSize.x, floorSize.z) * 0.42;
-
-    const off = new Float32Array(N);
-    const lat = new Float32Array(N);
-    for (let i = 0; i < N; i++) { off[i] = Math.random(); lat[i] = (Math.random() - 0.5) * 2; }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
-    const mat = new THREE.PointsMaterial({
-      color: 0xbfd0ff, size: 0.55, transparent: true, opacity: 0.55,
-      depthWrite: false, blending: THREE.AdditiveBlending,
-    });
-    const pts = new THREE.Points(geo, mat);
-    pts.frustumCulled = false;
-    scene.add(pts);
-    flow = { off, lat, a, b, perp, halfWidth, geo, mat };
-  }
-
-  function updateFlow(dt) {
-    if (!flow) return;
-    const p = flow.geo.attributes.position.array;
-    const tmp = new THREE.Vector3();
-    const sp = 0.045 + em.data * 0.11; // surges during the DATA phase
-    for (let i = 0; i < flow.off.length; i++) {
-      flow.off[i] = (flow.off[i] + dt * sp) % 1;
-      const t = flow.off[i];
-      tmp.lerpVectors(flow.a, flow.b, t)
-        .addScaledVector(flow.perp, flow.lat[i] * flow.halfWidth);
-      tmp.y += Math.sin(t * Math.PI) * 0.5; // gentle lift mid-room
-      p[i * 3] = tmp.x; p[i * 3 + 1] = tmp.y; p[i * 3 + 2] = tmp.z;
-    }
-    flow.geo.attributes.position.needsUpdate = true;
-    flow.mat.opacity = 0.18 + em.data * 0.6;
-  }
-
-  // The Patch "history": particles riding both side walls FRONT -> REAR,
-  // i.e. the loop's output ageing from newest (front) to fossil (rear).
-  function buildPatchWave() {
+  // Oriented arrow flows, one per surface (SCRIPT §2 directional motion).
+  function buildArrows() {
+    const back = surfBy('BackWall'), front = surfBy('FrontWall'), floor = surfBy('Floor');
     const left = surfBy('LeftWall'), right = surfBy('RightWall');
-    const front = surfBy('FrontWall'), back = surfBy('BackWall'), floor = surfBy('Floor');
-    if (!left || !right || !front || !back || !floor) return;
-    const fz = front.center.z, bz = back.center.z;
-    const yFloor = new THREE.Box3().setFromObject(floor.mesh).max.y;
-    const hgt = Math.min(new THREE.Box3().setFromObject(left.mesh).getSize(new THREE.Vector3()).y, 11);
-    const N = 240;
-    const off = new Float32Array(N), yf = new Float32Array(N), side = new Float32Array(N);
-    for (let i = 0; i < N; i++) { off[i] = Math.random(); yf[i] = Math.random(); side[i] = i % 2 ? 1 : -1; }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
-    const mat = new THREE.PointsMaterial({
-      color: 0xe8d48b, size: 0.5, transparent: true, opacity: 0,
-      depthWrite: false, blending: THREE.AdditiveBlending,
-    });
-    const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; scene.add(pts);
-    patchWave = { off, yf, side, geo, mat, fz, bz, yFloor, hgt, lx: left.center.x, rx: right.center.x };
+    if (!back || !front || !floor || !left || !right) return;
+    const dataDir = Math.sign(front.center.z - back.center.z) || 1;   // rear → front (floor)
+    const patchDir = Math.sign(back.center.z - front.center.z) || -1; // front → rear (side walls)
+    arrowFields = [
+      { key: 'meta',  f: createArrowField(scene, back,  { mode: 'random', color: 0x8be8a0, count: 70 }) },
+      { key: 'data',  f: createArrowField(scene, floor, { mode: 'flow',   color: 0xbfd0ff, count: 130, dirSign: dataDir }) },
+      { key: 'loop',  f: createArrowField(scene, front, { mode: 'whirl',  color: 0xff7ad9, count: 100 }) },
+      { key: 'patch', f: createArrowField(scene, left,  { mode: 'patch',  color: 0xe8d48b, count: 95, dirSign: patchDir }) },
+      { key: 'patch', f: createArrowField(scene, right, { mode: 'patch',  color: 0xe8d48b, count: 95, dirSign: patchDir }) },
+    ];
   }
 
-  function updatePatchWave(dt) {
-    if (!patchWave) return;
-    const pw = patchWave, p = pw.geo.attributes.position.array;
-    const speed = 0.04 + em.patch * 0.12;
-    for (let i = 0; i < pw.off.length; i++) {
-      pw.off[i] = (pw.off[i] + dt * speed) % 1;
-      const t = pw.off[i];
-      p[i * 3] = pw.side[i] < 0 ? pw.lx : pw.rx;          // left or right wall
-      p[i * 3 + 1] = pw.yFloor + 1 + pw.yf[i] * pw.hgt;   // up the wall
-      p[i * 3 + 2] = pw.fz + (pw.bz - pw.fz) * t;         // front -> rear
-    }
-    pw.geo.attributes.position.needsUpdate = true;
-    pw.mat.opacity = 0.08 + em.patch * 0.6;
+  function updateArrows(dt) {
+    for (const a of arrowFields) a.f.update(dt, tAcc, em[a.key]);
   }
 
   // ---- loop-cycle sequencer -----------------------------------------
@@ -666,8 +598,7 @@ export function createRoomView(renderer) {
     player.setProgress(cyc.i, flyAnim ? 0 : cyc.t / CYCLE[cyc.i].dur);
     for (const k of ['data', 'patch', 'loop', 'meta']) em[k] += (emT[k] - em[k]) * Math.min(1, dt * 3);
 
-    updateFlow(dt);
-    updatePatchWave(dt);
+    updateArrows(dt);
 
     // breathing pulse on the active Loop / Meta wall
     const pulse = 0.5 + 0.5 * Math.sin(tAcc * 3.2);
