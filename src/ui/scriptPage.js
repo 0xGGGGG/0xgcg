@@ -10,6 +10,9 @@ import { PROJECT } from '../config/stages.js';
 // ---------------------------------------------------------------------------
 
 const POOL = '01XATCGｦｱｲｳｴｵﾊﾐﾑ{}[]/\\<>=+*#'.split('');
+const HUES = [150, 95, 45, 22, 320, 185, 268, 208];
+const rnd = (n) => (Math.random() * n) | 0;
+const pick = () => POOL[rnd(POOL.length)];
 
 export class ScriptPage {
   constructor({ onEnter }) {
@@ -49,6 +52,9 @@ export class ScriptPage {
     this.counter = el.querySelector('.sp-counter');
     this.canvas = el.querySelector('.sp-bg');
     this.ctx = this.canvas.getContext('2d');
+    this.mask = document.createElement('canvas');
+    this.mctx = this.mask.getContext('2d', { willReadFrequently: true });
+    this.boot = null; this.bootResolved = false; this.bootTimers = [];
 
     el.querySelectorAll('.sp-btn').forEach((b) => b.addEventListener('click', () => this.action(b.dataset.a)));
     el.querySelectorAll('.sp-door').forEach((b) => b.addEventListener('click', () => { this.stop(); this.onEnter && this.onEnter(b.dataset.go); }));
@@ -57,7 +63,7 @@ export class ScriptPage {
       this.pickVoice();
       this.tts.onvoiceschanged = () => this.pickVoice();
     }
-    this.render(0);
+    // first render happens in show() so the boot reveal replays on entry
   }
 
   pickVoice() {
@@ -110,13 +116,45 @@ export class ScriptPage {
     this.stage.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('in'));
 
-    // the title shows first; the body reveals after the title is spoken (or,
-    // if not narrating, after a short beat)
-    if (this.playing) this.startNarration();
-    else this._revealTimer = setTimeout(() => this.revealBody(), 850);
+    // hero: the ascii 0xGCG forms in the matrix, then the body reveals.
+    // others: title shows, then (after a beat or after it is spoken) the body.
+    if (this.hero) this.startBoot();
+    else { this.stopBoot(); if (this.playing) this.startNarration(); else this._revealTimer = setTimeout(() => this.revealBody(), 850); }
   }
 
   revealBody() { if (this.bodyEl) this.bodyEl.classList.add('in'); }
+
+  // ---- 0xGCG ascii boot reveal (hero) -------------------------------
+  startBoot() {
+    this.bootResolved = false;
+    this.boot = { gain: 0, target: 1 };
+    this.reels = [pick(), pick(), pick()];
+    this.locked = [false, false, false];
+    this.clearBootTimers();
+    this.resize();
+    const FINAL = ['G', 'C', 'G'];
+    [1500, 2100, 2700].forEach((ms, i) => this.bootTimers.push(setTimeout(() => {
+      this.reels[i] = FINAL[i]; this.locked[i] = true; this.buildMask();
+    }, ms)));
+    this.bootTimers.push(setTimeout(() => this.resolveBoot(), 3400));
+    this.reelIv = setInterval(() => {
+      let ch = false;
+      for (let i = 0; i < 3; i++) if (!this.locked[i]) { this.reels[i] = pick(); ch = true; }
+      if (ch) this.buildMask();
+    }, 80);
+  }
+  resolveBoot() {
+    if (this.bootResolved) return;
+    this.bootResolved = true;
+    clearInterval(this.reelIv); this.reelIv = 0;
+    this.reels = ['G', 'C', 'G']; this.locked = [true, true, true]; this.buildMask();
+    this.clearBootTimers();
+    if (this.boot) this.boot.target = 0.85; // the mark lingers behind the hero text
+    this.revealBody();
+    if (this.playing) this.speakFrom(0);
+  }
+  stopBoot() { if (this.boot) this.boot.target = 0; clearInterval(this.reelIv); this.reelIv = 0; this.clearBootTimers(); }
+  clearBootTimers() { this.bootTimers.forEach(clearTimeout); this.bootTimers = []; }
 
   media(m) {
     const box = document.createElement('div'); box.className = 'sp-media';
@@ -130,7 +168,8 @@ export class ScriptPage {
   // ---- narration (TTS + karaoke) ------------------------------------
   // speak the (big) title first, then pause, then reveal + speak the body
   startNarration() {
-    if (this.hero || !this.titleText) { this.revealBody(); this.speakFrom(0); return; }
+    if (this.hero) { if (this.bootResolved) { this.revealBody(); this.speakFrom(0); } return; }
+    if (!this.titleText) { this.revealBody(); this.speakFrom(0); return; }
     this.speakTitle();
   }
 
@@ -213,29 +252,86 @@ export class ScriptPage {
     return false;
   }
 
-  // ---- matrix backdrop ----------------------------------------------
+  // ---- matrix backdrop + 0xGCG mark ---------------------------------
   resize() {
     const dpr = Math.min(devicePixelRatio || 1, 2);
     this.W = innerWidth; this.H = innerHeight;
     this.canvas.width = this.W * dpr; this.canvas.height = this.H * dpr;
     this.canvas.style.width = this.W + 'px'; this.canvas.style.height = this.H + 'px';
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.font = 14; this.cell = 16;
-    this.cols = Math.ceil(this.W / this.cell);
-    this.drops = Array.from({ length: this.cols }, () => -((Math.random() * this.H / this.cell) | 0));
+    this.font = Math.max(12, Math.round(this.W / 120));
+    this.ctx.font = `${this.font}px monospace`;
+    this.cellW = Math.max(7, this.ctx.measureText('0').width + 1);
+    this.cellH = Math.round(this.font * 1.08);
+    this.cols = Math.ceil(this.W / this.cellW);
+    this.rows = Math.ceil(this.H / this.cellH);
+    this.drops = Array.from({ length: this.cols }, () => -rnd(this.rows));
+    this.colHue = Array.from({ length: this.cols }, () => HUES[rnd(HUES.length)]);
+    this.colSat = Array.from({ length: this.cols }, () => 96 + rnd(5));
+    // the 0xGCG mark on its own coarser grid (~1.5x the rain glyphs)
+    this.logoFont = Math.round(this.font * 1.5);
+    this.ctx.font = `${this.logoFont}px monospace`;
+    this.logoCellW = Math.max(10, this.ctx.measureText('0').width + 1);
+    this.logoCellH = Math.round(this.logoFont * 1.05);
+    this.logoCols = Math.ceil(this.W / this.logoCellW);
+    this.logoRows = Math.ceil(this.H / this.logoCellH);
+    this.mask.width = this.W; this.mask.height = this.H;
+    this.maskGrid = new Uint8Array(this.logoCols * this.logoRows);
+    this.logoChar = new Array(this.logoCols * this.logoRows).fill('');
+    this.buildMask();
   }
-  draw() {
-    const g = this.ctx;
-    g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(0, 0, this.W, this.H);
-    g.font = `${this.font}px monospace`;
-    for (let c = 0; c < this.cols; c++) {
-      const y = this.drops[c] * this.cell;
-      if (y > 0 && y < this.H) {
-        g.fillStyle = 'rgba(90,150,120,0.35)';
-        g.fillText(POOL[(Math.random() * POOL.length) | 0], c * this.cell, y);
+
+  buildMask() {
+    if (!this.mctx || !this.logoRows) return;
+    const { mctx, W, H } = this;
+    const text = '0x' + (this.reels ? this.reels.join('') : 'GCG');
+    mctx.clearRect(0, 0, W, H);
+    mctx.fillStyle = '#fff'; mctx.textBaseline = 'middle'; mctx.textAlign = 'center';
+    let fs = Math.min(W * 0.15, H * 0.3);
+    mctx.font = `700 ${fs}px ui-monospace, monospace`;
+    while (mctx.measureText(text).width > W * 0.8 && fs > 10) { fs *= 0.94; mctx.font = `700 ${fs}px ui-monospace, monospace`; }
+    mctx.fillText(text, W / 2, H * 0.30);
+    const img = mctx.getImageData(0, 0, W, H).data;
+    const g = this.maskGrid; g.fill(0);
+    for (let r = 0; r < this.logoRows; r++) {
+      const py = Math.min(H - 1, (r * this.logoCellH + this.logoCellH * 0.5) | 0);
+      for (let c = 0; c < this.logoCols; c++) {
+        const px = Math.min(W - 1, (c * this.logoCellW + this.logoCellW * 0.5) | 0);
+        if (img[(py * W + px) * 4 + 3] > 80) { const idx = r * this.logoCols + c; g[idx] = 1; if (!this.logoChar[idx]) this.logoChar[idx] = pick(); }
       }
-      if (y > this.H && Math.random() > 0.975) this.drops[c] = 0;
-      this.drops[c] += 1;
+    }
+  }
+
+  draw() {
+    const g = this.ctx, W = this.W, H = this.H, cw = this.cellW, ch = this.cellH;
+    if (this.boot) this.boot.gain += ((this.boot.target || 0) - this.boot.gain) * 0.05;
+    const gain = this.boot ? this.boot.gain : 0;
+    g.fillStyle = `rgba(0,0,0,${0.10 + gain * 0.10})`; g.fillRect(0, 0, W, H);
+    g.font = `${this.font}px monospace`; g.textBaseline = 'top'; g.textAlign = 'left';
+    const TAIL = 5;
+    for (let c = 0; c < this.cols; c++) {
+      const x = c * cw, y = this.drops[c] * ch, h = this.colHue[c], s = this.colSat[c];
+      for (let k = TAIL; k >= 1; k--) {
+        const ty = y - k * ch; if (ty < 0 || ty >= H) continue;
+        const L = 18 + rnd(40) - k * 3, a = (0.18 + gain * 0.42) / k;
+        g.fillStyle = `hsla(${h},${s}%,${Math.max(10, L)}%,${a})`; g.fillText(pick(), x, ty);
+      }
+      if (y >= 0 && y < H) { g.fillStyle = `hsla(${h},${s}%,${54 + gain * 12}%,${0.45 + gain * 0.5})`; g.fillText(pick(), x, y); }
+      if (y > H && Math.random() > 0.975) this.drops[c] = -rnd(8);
+      this.drops[c] += 0.6 + gain * 0.4;
+    }
+    // the 0xGCG mark, formed of bright glyphs, fading by boot gain
+    if (gain > 0.02 && this.maskGrid) {
+      const lw = this.logoCellW, lh = this.logoCellH, G = this.maskGrid;
+      g.font = `700 ${this.logoFont}px monospace`;
+      for (let r = 0; r < this.logoRows; r++) for (let c = 0; c < this.logoCols; c++) {
+        const idx = r * this.logoCols + c; if (!G[idx]) continue;
+        if (Math.random() < 0.06) this.logoChar[idx] = pick();
+        const x = c * lw, y = r * lh;
+        g.fillStyle = `rgba(0,0,0,${0.9 * gain})`; g.fillRect(x, y, lw, lh);
+        g.fillStyle = Math.random() < 0.24 ? `hsl(${HUES[rnd(HUES.length)]},100%,68%)` : '#ffffff';
+        g.globalAlpha = gain; g.fillText(this.logoChar[idx], x, y); g.globalAlpha = 1;
+      }
     }
   }
 
@@ -244,10 +340,12 @@ export class ScriptPage {
     this.resize();
     if (!this._onR) { this._onR = () => this.resize(); addEventListener('resize', this._onR); }
     if (!this.raf) { const loop = () => { this.draw(); this.raf = requestAnimationFrame(loop); }; this.raf = requestAnimationFrame(loop); }
+    this.render(0); // (re)play the 0xGCG boot reveal on entry
   }
   hide() {
     this.el.classList.remove('show');
     this.stop();
+    this.stopBoot();
     cancelAnimationFrame(this.raf); this.raf = 0;
   }
 }
