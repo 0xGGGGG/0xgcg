@@ -78,41 +78,46 @@ const DWELL = 9; // seconds parked at a node before auto-advancing
 const overlay = new Overlay(document.getElementById('ui'));
 const soundtrack = new Soundtrack();
 
-// Core transport: a per-act soundtrack scrubber (voice-memo waveform)
+// Core timeline transport (all acts side by side, each with its waveform)
 const corePlayer = new Player({
   steps: STAGES.map((s) => ({ key: s.id, label: s.title, sub: s.subtitle, color: s.color, dur: DWELL })),
-  waveform: true,
   onSelect: (i) => go(i),
   onToggle: (on) => setAuto(on),       // master play/pause: audio + tour
-  onSeek: (frac) => { soundtrack.resume(); soundtrack.seek(STAGES[active].id, frac); },
   playing: true,
 });
 corePlayer.mount(document.getElementById('player-mount'));
+corePlayer.setTracks(STAGES.map((s) => soundtrack.peaks(s.id)));
 
 let active = 0;
+let resumeOnArrive = false;
 rig.onDepart = () => overlay.hide();
 rig.onArrive = (i) => {
   active = i;
   autoTimer = 0;            // dwell starts on arrival, so the tour paces evenly
   overlay.show(i);
   corePlayer.setActive(i);
-  corePlayer.setTrack(soundtrack.peaks(STAGES[i].id), STAGES[i].color);
-  soundtrack.pausedAt = 0;
-  if (auto) { soundtrack.resume(); soundtrack.play(STAGES[i].id, 0); }
+  if (resumeOnArrive) { resumeOnArrive = false; soundtrack.resume(); soundtrack.play(STAGES[i].id, 0); }
 };
 
+// navigate: stop, park the playhead at the mark's start, fly, and only resume
+// playing once the transition animation has finished
 function go(i) {
   active = i;
   corePlayer.setActive(i);
-  corePlayer.setTrack(soundtrack.peaks(STAGES[i].id), STAGES[i].color);
+  resumeOnArrive = auto;
+  soundtrack.pause();
+  soundtrack.pausedAt = 0;
   rig.goTo(i);
 }
 function setAuto(on) {
   auto = on;
   autoTimer = 0;
   corePlayer.setPlaying(on);
-  if (on) { soundtrack.resume(); soundtrack.play(STAGES[active].id, soundtrack.curId === STAGES[active].id ? soundtrack.pausedAt : 0); }
-  else soundtrack.pause();
+  if (on) {
+    soundtrack.resume();
+    if (rig.anim) resumeOnArrive = true;
+    else soundtrack.play(STAGES[active].id, soundtrack.curId === STAGES[active].id ? soundtrack.pausedAt : 0);
+  } else { soundtrack.pause(); resumeOnArrive = false; }
 }
 
 // ---- view mode: 'core' (neuron storyboard) | 'layout' (room plan) ----
@@ -401,7 +406,7 @@ function frame() {
       go((active + 1) % STAGES.length);
     }
   }
-  corePlayer.setHead(soundtrack.progress());
+  corePlayer.setProgress(active, rig.anim ? 0 : Math.min(1, autoTimer / DWELL));
 
   // link-inspection dolly toward the active soma
   if (linkRestPos) {

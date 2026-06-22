@@ -290,24 +290,15 @@ body.mode-layout #layout-loading{display:block}
 .pl-step.on i{opacity:1}
 .pl-arrow{color:#454545;font-size:10px;flex:none}
 
-/* the ruler */
-.pl-ruler{position:relative;width:100%;height:16px}
-.pl-ruler.is-wave{height:30px;border:1px solid rgba(255,255,255,.1);border-radius:3px;
-  background:rgba(255,255,255,.02);cursor:pointer;overflow:hidden}
+/* the timeline ruler (all stages side by side, each with its waveform) */
+.pl-ruler{position:relative;width:100%;height:32px;border:1px solid rgba(255,255,255,.1);
+  border-radius:3px;background:rgba(255,255,255,.02);overflow:hidden;cursor:pointer}
 .pl-wave{position:absolute;inset:0;width:100%;height:100%;display:block}
-.pl-track{position:absolute;inset:0;border-radius:2px;
-  background:linear-gradient(0deg,rgba(255,255,255,.06),rgba(255,255,255,.03));
-  border:1px solid rgba(255,255,255,.1);overflow:hidden}
-.pl-tick{position:absolute;bottom:0;width:1px;height:4px;background:rgba(255,255,255,.18)}
-.pl-tick.maj{height:7px;background:rgba(255,255,255,.32)}
-.pl-seg{position:absolute;top:0;bottom:0;cursor:pointer;
-  background:linear-gradient(0deg,color-mix(in srgb,var(--c) 16%,transparent),transparent)}
-.pl-seg.on{background:linear-gradient(0deg,color-mix(in srgb,var(--c) 42%,transparent),
-  color-mix(in srgb,var(--c) 8%,transparent))}
-.pl-bound{position:absolute;top:0;bottom:0;width:2px;background:var(--c);opacity:.85;
+.pl-bounds{position:absolute;inset:0;pointer-events:none}
+.pl-bound{position:absolute;top:0;bottom:0;width:1.5px;background:var(--c);opacity:.7;
   box-shadow:0 0 8px var(--c)}
 .pl-head{position:absolute;top:-2px;bottom:-2px;width:2px;background:#fff;
-  box-shadow:0 0 10px rgba(255,255,255,.8);transition:left .12s linear;pointer-events:none}
+  box-shadow:0 0 10px rgba(255,255,255,.85);transition:left .12s linear;pointer-events:none}
 
 .pl-cap{display:flex;align-items:baseline;gap:10px;font-size:11.5px;letter-spacing:.06em;
   color:#9a9a9a;text-align:center}

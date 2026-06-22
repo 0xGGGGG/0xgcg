@@ -2,13 +2,16 @@
 // Per-stage soundtrack + waveform data. Each act gets its own loop. By default
 // the loop is synthesized (royalty-free, in the dark drone/pulse spirit of
 // SCRIPT §10) so nothing copyrighted is bundled; drop assets/<id>.(mp3|ogg|webm)
-// to override a stage with a licensed track. Web Audio drives playback and the
-// waveform peaks shown in the player's scrubber.
+// to override a stage with a licensed track.
+//
+// Waveform peaks are computed from a plain Float32Array (no AudioContext, so
+// the timeline can render before any user gesture); the AudioContext is only
+// created for playback, on the first gesture.
 // ---------------------------------------------------------------------------
 
-const DUR = 16; // seconds per generated loop
+const SR = 44100;   // synth sample rate (AudioBuffer declares it; ctx resamples)
+const DUR = 16;     // seconds per generated loop
 
-// per-stage synthesis params, tuned to each act's mood
 const PARAMS = {
   boot:    { base: 48, pulse: 0.30, noise: 0.04, mode: 'drone',  amp: 0.55 },
   feed:    { base: 55, pulse: 0.85, noise: 0.10, mode: 'click',  amp: 0.62 },
@@ -23,13 +26,26 @@ export class Soundtrack {
   constructor() {
     this.ctx = null;
     this.gain = null;
-    this.tracks = {};     // id -> { buffer, peaks }
+    this.data = {};       // id -> Float32Array (synth)
+    this.peaksCache = {}; // id -> Float32Array (waveform)
+    this.buffers = {};    // id -> AudioBuffer (built on demand for playback)
     this.src = null;
     this.curId = null;
-    this.startedAt = 0;   // ctx time at offset 0
-    this.pausedAt = 0;    // offset seconds when paused
+    this.startedAt = 0;
+    this.pausedAt = 0;
     this.playing = false;
   }
+
+  _data(id) {
+    if (!this.data[id]) this.data[id] = synth(id);
+    return this.data[id];
+  }
+  peaks(id, count = 200) {
+    const key = id + ':' + count;
+    if (!this.peaksCache[key]) this.peaksCache[key] = peaksOf(this._data(id), count);
+    return this.peaksCache[key];
+  }
+  duration(id) { return this._data(id).length / SR; }
 
   _ensure() {
     if (this.ctx) return this.ctx;
@@ -40,30 +56,26 @@ export class Soundtrack {
     this.gain.connect(this.ctx.destination);
     return this.ctx;
   }
-
   async resume() { this._ensure(); if (this.ctx.state === 'suspended') { try { await this.ctx.resume(); } catch {} } }
 
-  // lazily build (or load) a stage's track
-  track(id) {
-    if (this.tracks[id]) return this.tracks[id];
+  _buffer(id) {
+    if (this.buffers[id]) return this.buffers[id];
     const ctx = this._ensure();
-    const buffer = synth(ctx, id);
-    const t = { buffer, peaks: peaksOf(buffer, 240) };
-    this.tracks[id] = t;
-    // try to upgrade to a real owned file if present
-    tryLoad(ctx, id).then((buf) => { if (buf) { t.buffer = buf; t.peaks = peaksOf(buf, 240); } });
-    return t;
+    const arr = this._data(id);
+    const buf = ctx.createBuffer(1, arr.length, SR);
+    buf.getChannelData(0).set(arr);
+    this.buffers[id] = buf;
+    tryLoad(ctx, id).then((real) => { if (real) { this.buffers[id] = real; } });
+    return buf;
   }
-  peaks(id) { return this.track(id).peaks; }
-  duration(id) { return this.track(id).buffer.duration; }
 
   play(id, offset = 0) {
     this._ensure();
     this.stopSrc();
-    const t = this.track(id);
-    const off = ((offset % t.buffer.duration) + t.buffer.duration) % t.buffer.duration;
+    const buf = this._buffer(id);
+    const off = ((offset % buf.duration) + buf.duration) % buf.duration;
     const s = this.ctx.createBufferSource();
-    s.buffer = t.buffer; s.loop = true; s.connect(this.gain);
+    s.buffer = buf; s.loop = true; s.connect(this.gain);
     s.start(0, off);
     this.src = s; this.curId = id; this.playing = true;
     this.startedAt = this.ctx.currentTime - off;
@@ -84,46 +96,39 @@ export class Soundtrack {
 }
 
 // ---- synthesis -----------------------------------------------------------
-function synth(ctx, id) {
+function synth(id) {
   const p = PARAMS[id] || PARAMS.boot;
-  const sr = ctx.sampleRate, n = Math.floor(DUR * sr);
-  const buf = ctx.createBuffer(1, n, sr);
-  const d = buf.getChannelData(0);
-  const rand = rng((id.charCodeAt(0) * 131 + 7) >>> 0);
+  const n = Math.floor(DUR * SR);
+  const d = new Float32Array(n);
+  const rand = rng(((id.charCodeAt(0) || 65) * 131 + 7) >>> 0);
   const TAU = Math.PI * 2;
   let last = 0;
   for (let i = 0; i < n; i++) {
-    const t = i / sr;
+    const t = i / SR;
     const penv = 0.5 + 0.5 * Math.sin(TAU * p.pulse * t - Math.PI / 2);
     let s = 0;
     s += 0.30 * Math.sin(TAU * p.base * t);
     s += 0.12 * Math.sin(TAU * p.base * 2 * t);
-    s += 0.30 * Math.sin(TAU * (p.base / 2) * t) * penv; // sub, pulsing
-    // texture per mode
+    s += 0.30 * Math.sin(TAU * (p.base / 2) * t) * penv;
     let nz = (rand() * 2 - 1);
     if (p.mode === 'click') nz *= (rand() < 0.012 ? 1 : 0.05);
     else if (p.mode === 'breath') nz *= (0.3 + 0.7 * (0.5 + 0.5 * Math.sin(TAU * 0.2 * t)));
-    else if (p.mode === 'buzz') { nz = Math.sign(Math.sin(TAU * p.base * 3 * t)) * 0.4 + nz * 0.5; }
+    else if (p.mode === 'buzz') nz = Math.sign(Math.sin(TAU * p.base * 3 * t)) * 0.4 + nz * 0.5;
     else if (p.mode === 'broken') { if (rand() < 0.03) nz = (rand() * 2 - 1) * 2; if (rand() < 0.02) nz = 0; }
     s += nz * p.noise;
     s *= p.amp;
     last = last * 0.7 + s * 0.3; // gentle low-pass
     d[i] = last;
   }
-  // seamless-ish loop: short equal-power crossfade of the tail into the head
-  const xf = Math.floor(0.05 * sr);
-  for (let i = 0; i < xf; i++) {
-    const a = i / xf;
-    d[i] = d[i] * a + d[n - xf + i] * (1 - a);
-  }
-  // normalize
+  const xf = Math.floor(0.05 * SR);
+  for (let i = 0; i < xf; i++) { const a = i / xf; d[i] = d[i] * a + d[n - xf + i] * (1 - a); }
   let max = 1e-4; for (let i = 0; i < n; i++) max = Math.max(max, Math.abs(d[i]));
   const g = 0.9 / max; for (let i = 0; i < n; i++) d[i] *= g;
-  return buf;
+  return d;
 }
 
-function peaksOf(buffer, count) {
-  const d = buffer.getChannelData(0), step = Math.floor(d.length / count);
+function peaksOf(d, count) {
+  const step = Math.floor(d.length / count);
   const peaks = new Float32Array(count);
   for (let i = 0; i < count; i++) {
     let m = 0; const a = i * step, b = a + step;
@@ -136,11 +141,10 @@ function peaksOf(buffer, count) {
 async function tryLoad(ctx, id) {
   for (const ext of ['mp3', 'ogg', 'webm', 'wav']) {
     try {
-      const res = await fetch(`assets/${id}.${ext}`, { method: 'GET' });
+      const res = await fetch(`assets/${id}.${ext}`);
       if (!res.ok) continue;
-      const ab = await res.arrayBuffer();
-      return await ctx.decodeAudioData(ab);
-    } catch { /* keep looking / fall back to synth */ }
+      return await ctx.decodeAudioData(await res.arrayBuffer());
+    } catch { /* fall back to synth */ }
   }
   return null;
 }
