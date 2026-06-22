@@ -12,12 +12,11 @@ import { Portal } from './ui/portal.js';
 import { Markers } from './ui/markers.js';
 import { createRoomView } from './layout/roomView.js';
 import { CosmicAddress, initHeaderAddress } from './ui/cosmicAddress.js';
-import { Intro } from './ui/intro.js';
+import { ScriptPage } from './ui/scriptPage.js';
 import { loadSection } from './ui/sectionView.js';
 import { Player } from './ui/player.js';
 import { linkTexture } from './ui/linkPreview.js';
 import { Soundtrack } from './core/soundtrack.js';
-import { AboutPage } from './ui/aboutPage.js';
 
 const app = document.getElementById('app');
 
@@ -121,20 +120,18 @@ function setAuto(on) {
   } else { soundtrack.pause(); resumeOnArrive = false; }
 }
 
-// ---- view mode: 'core' (neuron storyboard) | 'layout' (room plan) ----
+// ---- view mode: 'script' (index) | 'core' (Timeline storyboard) | 'layout' ----
 let mode = 'core';
 let room = null;  // lazily created RoomView (loads the FBX on first open)
-let intro = null; // the §1 title page (index)
 const navBtns = [...document.querySelectorAll('#view-nav button')];
 
-// routing:  / -> intro · /core -> Core (about) · /timeline -> Timeline (storyboard) · /layout -> Layout
-const aboutPage = new AboutPage({ onEnter: (m) => setMode(m) });
+// routing:  / -> Script (narrated) · /timeline -> Timeline (storyboard) · /layout -> Layout
+const scriptPage = new ScriptPage({ onEnter: (m) => setMode(m) });
 const pathToMode = (p) => {
   const x = p.replace(/\/+$/, '');
   if (x === '/layout') return 'layout';
   if (x === '/timeline') return 'core';
-  if (x === '/core') return 'about';
-  return 'intro';
+  return 'script';
 };
 
 // Reset the Core view to its opening framing, then autoplay the act tour.
@@ -151,37 +148,28 @@ function resetCore() {
 function setMode(m, { push = true, reset = true } = {}) {
   mode = m;
   document.body.classList.toggle('mode-layout', m === 'layout');
-  document.body.classList.toggle('mode-intro', m === 'intro');
-  document.body.classList.toggle('mode-about', m === 'about');
+  document.body.classList.toggle('mode-script', m === 'script');
   navBtns.forEach((b) => b.classList.toggle('on', b.dataset.view === m));
   corePlayer.el.style.display = m === 'core' ? 'flex' : 'none';
-  aboutPage.hide();
-  if (m === 'intro') {
+  if (m !== 'script') scriptPage.hide();
+  if (m === 'script') {
     setAuto(false);
     controls.enabled = false;
     if (room) room.deactivate();
-    if (intro) intro.show();
-  } else if (m === 'about') {
-    setAuto(false);
-    controls.enabled = false;
-    if (room) room.deactivate();
-    if (intro) intro.hide();
-    aboutPage.show();
+    scriptPage.show();
   } else if (m === 'layout') {
-    if (intro) intro.hide();
     setAuto(false);
     controls.enabled = false;
     if (!room) room = createRoomView(renderer);
     room.activate();
     if (reset) room.frameRoom(); // no-op until the FBX has loaded, then re-homes
   } else { // core (the Timeline storyboard)
-    if (intro) intro.hide();
     if (room) room.deactivate();
     controls.enabled = true;
     if (reset) resetCore();
   }
   if (push) {
-    const path = m === 'layout' ? '/layout' : m === 'core' ? '/timeline' : m === 'about' ? '/core' : '/';
+    const path = m === 'layout' ? '/layout' : m === 'core' ? '/timeline' : '/';
     if (location.pathname !== path) history.pushState({ mode: m }, '', path);
   }
 }
@@ -197,10 +185,8 @@ document.getElementById('addr-trigger').addEventListener('click', () => cosmos.t
 // warm the keyed venue section drawing (used by Core cards + Layout overlay)
 loadSection();
 
-// ---- intro / title page (the index `/`) ------------------------------
-intro = new Intro({ onEnter: (m) => setMode(m) });
-// clicking the top-left 0xGCG brand returns to the index (replays the boot)
-document.querySelector('#topbar .brand').addEventListener('click', () => setMode('intro'));
+// clicking the top-left 0xGCG brand returns to the Script (index)
+document.querySelector('#topbar .brand').addEventListener('click', () => setMode('script'));
 
 // ---- raycast: click to fly, hover to open the storyteller portal -----
 const ray = new THREE.Raycaster();
@@ -315,11 +301,11 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 
 // ---- keyboard ---------------------------------------------------------
 addEventListener('keydown', (e) => {
-  if (mode === 'intro') {
-    if (e.key === 'Enter' || e.key === 't') { setMode('core'); return; }   // Timeline
+  if (mode === 'script') {
+    if (e.key === 't') { setMode('core'); return; }       // Timeline
     if (e.key === 'l') { setMode('layout'); return; }
-    if (e.key === 'c') { setMode('about'); return; }                       // Core (about)
-    return; // intro owns the keyboard until a door is chosen
+    if (scriptPage.key(e)) return;                          // reset / prev / next / play
+    return; // the Script page owns the keyboard
   }
   if (e.key === 'Escape') { cosmos.hide(); return; }
   if (e.key.toLowerCase() === 'a') { cosmos.toggle(); return; }
@@ -329,7 +315,7 @@ addEventListener('keydown', (e) => {
     return;
   }
   if (e.key.toLowerCase() === 'h') { document.getElementById('ui').classList.toggle('hidden'); return; }
-  if (e.key === 'c') { setMode('about'); return; }    // Core (about)
+  if (e.key === 's') { setMode('script'); return; }   // Script
   if (e.key === 't') { setMode('core'); return; }     // Timeline
   if (e.key === 'l') { setMode('layout'); return; }
   if (mode !== 'core') return;
@@ -383,8 +369,8 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
-  // ---- Intro / Core(about): pure DOM pages; blank the canvas behind them
-  if (mode === 'intro' || mode === 'about') {
+  // ---- Script page: pure DOM; blank the WebGL canvas behind it
+  if (mode === 'script') {
     renderer.setRenderTarget(null);
     renderer.autoClear = true;
     renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);

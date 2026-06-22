@@ -63,8 +63,9 @@ CDN, so you need network access on first load.
 
 ## Routes
 
-- `/` → the **intro** (SCRIPT §1 title boot) with doors to Timeline & Layout.
-- `/core` → the **Core** page (about / manifesto / stage-modes / references).
+- `/` → the **Script** page: a narrated entity that speaks SCRIPT.md passage
+  by passage (Web Speech TTS + karaoke word highlighting) over a matrix/CRT
+  backdrop, with sticky reset / prev / play / next and doors to the views.
 - `/timeline` → the **Timeline** (neuron storyboard) · `/layout` → the **Layout** view.
 - The view switcher updates the URL; every trigger re-homes the viewpoint.
 
