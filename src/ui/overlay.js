@@ -84,6 +84,7 @@ export class Overlay {
     }
 
     this.panel.style.setProperty('--accent', MONO_UI);
+    this.panel.scrollTop = 0; // start each act at the top, not the prior scroll
     this.panel.classList.add('show');
   }
 }

@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { VRButton } from 'three/addons/webxr/VRButton.js';
 
 import { STAGES } from './config/stages.js';
 import { buildNeuronGraph } from './core/neuronGraph.js';
@@ -16,6 +15,7 @@ import { CosmicAddress, initHeaderAddress } from './ui/cosmicAddress.js';
 import { Intro } from './ui/intro.js';
 import { loadSection } from './ui/sectionView.js';
 import { Player } from './ui/player.js';
+import { linkTexture } from './ui/linkPreview.js';
 
 const app = document.getElementById('app');
 
@@ -30,7 +30,6 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.9;
 renderer.xr.enabled = true;
 app.appendChild(renderer.domElement);
-document.body.appendChild(VRButton.createButton(renderer));
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x000000, 0.02);
@@ -189,6 +188,47 @@ const markers = new Markers(graph.stageNodes, {
 });
 let hovered = -1;                      // orb currently under the cursor (video/glow)
 
+// ---- link hover: dolly to the active soma + map the link into the globe ----
+let linkActive = false;
+let linkRestPos = null;     // camera position before dolly
+let linkDolly = 0;          // 0 = rest, 1 = close
+let linkDollyTarget = 0;
+
+function showLink(url, label) {
+  if (mode !== 'core') return;
+  const u = graph.stageNodes[active].mesh.material.uniforms;
+  if (!u) return;
+  u.uVideo.value = linkTexture(url, label);
+  u.uHasVideo.value = 1;
+  linkActive = true;
+  setAuto(false);                 // pause the tour while inspecting
+  if (!linkRestPos) linkRestPos = camera.position.clone();
+  linkDollyTarget = 1;
+  controls.enabled = false;
+}
+function hideLink() {
+  if (!linkActive) return;
+  linkActive = false;
+  const u = graph.stageNodes[active].mesh.material.uniforms;
+  if (u) u.uHasVideo.value = 0;
+  linkDollyTarget = 0;            // dolly back; controls re-enabled when settled
+}
+
+// delegate hover over any link pill inside a card/overlay
+function wireLinkHover(el) {
+  let cur = null;
+  el.addEventListener('pointermove', (e) => {
+    const a = e.target.closest('a[href]');
+    if (a === cur) return;
+    cur = a;
+    if (a) showLink(a.href, a.textContent.replace(/^↗\s*/, '').trim());
+    else hideLink();
+  });
+  el.addEventListener('pointerleave', () => { cur = null; hideLink(); });
+}
+wireLinkHover(document.getElementById('panel'));
+wireLinkHover(portal.el);
+
 // ---- lazy video accretion textures (assets/<id>.mp4) -----------------
 const videos = [];
 function ensureVideo(i) {
@@ -303,7 +343,7 @@ function updateNodes(t) {
       u.uTime.value = t;
       const a = i === active ? 1 : 0;
       u.uActive.value += (a - u.uActive.value) * 0.08;
-      const h = (i === hovered || i === portal.index) ? 1 : 0;
+      const h = (i === hovered || i === portal.index || (linkActive && i === active)) ? 1 : 0;
       u.uHover.value += (h - u.uHover.value) * 0.12;
     }
   });
@@ -352,6 +392,16 @@ function frame() {
     }
   }
   corePlayer.setProgress(active, rig.anim ? 0 : Math.min(1, autoTimer / DWELL));
+
+  // link-inspection dolly toward the active soma
+  if (linkRestPos) {
+    linkDolly += (linkDollyTarget - linkDolly) * Math.min(1, dt * 4);
+    const tgt = controls.target;
+    const close = tgt.clone().add(linkRestPos.clone().sub(tgt).multiplyScalar(0.5));
+    camera.position.lerpVectors(linkRestPos, close, linkDolly);
+    camera.lookAt(tgt);
+    if (linkDollyTarget === 0 && linkDolly < 0.002) { linkRestPos = null; linkDolly = 0; controls.enabled = true; }
+  }
 
   rig.update(dt, t);
   updateNodes(t);

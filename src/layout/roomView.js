@@ -3,7 +3,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { ViewHelper } from 'three/addons/helpers/ViewHelper.js';
 import { buildSection } from '../ui/sectionView.js';
-import { Player } from '../ui/player.js';
+import { CircularPlayer } from '../ui/circularPlayer.js';
+import { linkTexture } from '../ui/linkPreview.js';
 
 const PHASE_COLOR = { meta: '#8be8a0', data: '#bfd0ff', loop: '#ff7ad9', patch: '#e8d48b', return: '#b888ff' };
 
@@ -40,6 +41,10 @@ export const SURFACES = [
       'the soundtrack like a physical law, never an EDM drop.',
     also: ['black hole', 'pulsar', 'pupil', 'cell nucleus', 'seed', 'server node', 'void main()'],
     fragments: ['void main() {', '  while (true) {', '    grow(); corrupt();', '    glitch(); dimension++;', '  }', '}'],
+    refs: [
+      { label: 'Black hole / event horizon shader', url: 'https://www.shadertoy.com/results?query=black+hole' },
+      { label: 'Pulsar — recurring object', url: 'https://www.youtube.com/results?search_query=pulsar+visualization' },
+    ],
   },
   {
     mesh: 'Floor', key: 'data', tag: 'FLOOR', label: 'Data',
@@ -51,6 +56,10 @@ export const SURFACES = [
       'before it becomes image.',
     also: ['FFT river', 'spectrogram', 'cymatic plate', 'EEG / seismograph', 'data bloodstream'],
     fragments: ['sub  → gravity, black liquid', 'low  → roots, pipe currents', 'mid  → cellular sparks', 'high → scanlines, data dust'],
+    refs: [
+      { label: 'Ryoji Ikeda — data as architecture', url: 'https://www.youtube.com/results?search_query=ryoji+ikeda+test+pattern' },
+      { label: 'Cymatics / Chladni', url: 'https://www.youtube.com/results?search_query=chladni+cymatics' },
+    ],
   },
   {
     mesh: 'BackWall', key: 'meta', tag: 'REAR', label: 'Meta',
@@ -62,6 +71,10 @@ export const SURFACES = [
       'sessions, failed renders, TODOs.',
     also: ['screen captures', 'Claude Code logs', 'shader snippets', 'failed renders', 'prompt fragments'],
     fragments: ['booting substrate...', 'seed: void', 'growth_rule: recursive_branching', 'corruption_threshold: 0.74', 'dimension++  // return void'],
+    refs: [
+      { label: 'Claude Code', url: 'https://claude.com/claude-code' },
+      { label: 'Terminal / glitch typography', url: 'https://www.youtube.com/results?search_query=terminal+glitch+typography' },
+    ],
   },
   {
     mesh: 'LeftWall', key: 'patch', tag: 'SIDE · L', label: 'The Patch',
@@ -73,6 +86,10 @@ export const SURFACES = [
       'the front, fossilized states and source leakage toward the rear.',
     also: ['software commits', 'synth patch cables', 'cultivated land', 'timeline of changes'],
     fragments: ['Patch 0.4 — recursive branching', 'Patch 0.6 — circuit inheritance', 'Patch 0.7 — data swarm', 'Patch 0.8 — rollback failed'],
+    refs: [
+      { label: 'Wave Function Collapse', url: 'https://github.com/mxgmn/WaveFunctionCollapse' },
+      { label: 'git history visualization', url: 'https://www.youtube.com/results?search_query=git+history+visualization' },
+    ],
   },
   {
     mesh: 'RightWall', key: 'patch', tag: 'SIDE · R', label: 'The Patch',
@@ -84,6 +101,10 @@ export const SURFACES = [
       'scales — each jewel reflects every other.',
     also: ['previous layer', 'future preview', 'failed generation', 'source / meta leak'],
     fragments: ['commit 03f7a9', '+ added membrane behavior', '+ increased branching density', '! corruption detected'],
+    refs: [
+      { label: "Indra's net — each node holds the whole", url: 'https://en.wikipedia.org/wiki/Indra%27s_net' },
+      { label: 'Cellular automata', url: 'https://www.youtube.com/results?search_query=cellular+automata' },
+    ],
   },
 ];
 
@@ -185,8 +206,7 @@ export function createRoomView(renderer) {
     { key: 'meta',   mesh: 'BackWall',  label: 'META',      sub: 'documents · the rear wall dreams the making', dur: 4.0 },
     { key: 'data',   mesh: 'Floor',     label: 'DATA',      sub: 'flows · soundtrack rear → front',             dur: 4.5 },
     { key: 'loop',   mesh: 'FrontWall', label: 'THE LOOP',  sub: 'transforms · data becomes world',             dur: 4.0 },
-    { key: 'patch',  mesh: 'LeftWall',  label: 'THE PATCH', sub: 'remembers · history slides front → rear',     dur: 5.0 },
-    { key: 'return', mesh: 'BackWall',  label: 'RETURN',    sub: 'patch dissolves into meta · dimension++',      dur: 3.0 },
+    { key: 'patch',  mesh: 'LeftWall',  label: 'THE PATCH', sub: 'remembers · slides front → rear, dissolves to Meta', dur: 5.0 },
   ];
   const cyc = { on: true, i: 0, t: 0 };
   const em = { data: 0, patch: 0, loop: 0, meta: 0 };       // eased emphasis 0..1
@@ -195,9 +215,10 @@ export function createRoomView(renderer) {
   const surfBy = (mesh) => surfaces.find((s) => s.def.mesh === mesh);
   const clock = new THREE.Clock();
 
-  // ---- shared timeline Player (drives the cycle, camera follows) -----
-  const player = new Player({
-    steps: CYCLE.map((c) => ({ key: c.key, label: c.label, sub: c.sub, color: PHASE_COLOR[c.key], dur: c.dur })),
+  // ---- circular transport (drives the cycle, camera follows) --------
+  const SHORT = { meta: 'META', data: 'DATA', loop: 'LOOP', patch: 'PATCH' };
+  const player = new CircularPlayer({
+    steps: CYCLE.map((c) => ({ key: c.key, label: c.label, short: SHORT[c.key], sub: c.sub, color: PHASE_COLOR[c.key], dur: c.dur })),
     onSelect: (i) => { cyc.i = i; cyc.t = 0; cycleEnter(i, { fly: true }); },
     onToggle: (on) => { cyc.on = on; },
     playing: true,
@@ -303,7 +324,7 @@ export function createRoomView(renderer) {
     markerWrap.appendChild(marker);
 
     surfaces.push({
-      def, mesh, center, anchor, normal,
+      def, mesh, center, anchor, normal, size: sz.clone(),
       marker,
       fill: mesh.material,
       edges: mesh.userData.edges,
@@ -344,6 +365,7 @@ export function createRoomView(renderer) {
   }
 
   function showCard(def) {
+    hideLinkOnWall();
     card.className = `rc-${def.key}`;
     card.innerHTML = `
       <div class="rc-meta"><span>${def.tag}</span><span class="rc-key">${def.key}</span></div>
@@ -351,15 +373,53 @@ export function createRoomView(renderer) {
       ${def.role ? `<p class="rc-role">${def.role}</p>` : ''}
       <p class="rc-body">${def.body}</p>
       ${def.also ? `<div class="rc-also">${def.also.map((a) => `<span>${a}</span>`).join('')}</div>` : ''}
-      ${def.fragments ? `<code class="rc-code">${def.fragments.join('\n')}</code>` : ''}`;
+      ${def.fragments ? `<code class="rc-code">${def.fragments.join('\n')}</code>` : ''}
+      ${def.refs ? `<div class="rc-refs">${def.refs.map((r) => `<a href="${r.url}" target="_blank" rel="noopener">↗ ${r.label}</a>`).join('')}</div>` : ''}`;
+    card.querySelectorAll('.rc-refs a').forEach((a) => {
+      a.addEventListener('pointerenter', () => showLinkOnWall(def, a.href, a.textContent.replace(/^↗\s*/, '').trim()));
+      a.addEventListener('pointerleave', () => hideLinkOnWall());
+    });
     card.classList.add('show');
   }
-  function hideCard() { card.classList.remove('show'); }
+  function hideCard() { card.classList.remove('show'); hideLinkOnWall(); }
 
-  // gently fly the orbit target + camera to a (target, eye) pair
+  // map a link preview onto the focused wall (hover on a Layout ref pill)
+  let linkPlane = null;
+  function showLinkOnWall(def, url, label) {
+    const s = surfBy(def.mesh); if (!s) return;
+    if (!linkPlane) {
+      linkPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(1, 1),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 1, side: THREE.DoubleSide,
+          depthWrite: false, blending: THREE.AdditiveBlending })
+      );
+      linkPlane.renderOrder = 5;
+      scene.add(linkPlane);
+    }
+    linkPlane.material.map = linkTexture(url, label);
+    linkPlane.material.needsUpdate = true;
+    const n = s.normal, sz = s.size;
+    const ax = Math.abs(n.x) > Math.abs(n.y) && Math.abs(n.x) > Math.abs(n.z) ? 'x'
+      : (Math.abs(n.y) > Math.abs(n.z) ? 'y' : 'z');
+    linkPlane.position.copy(s.center).addScaledVector(n, 0.4);
+    if (ax === 'y') {
+      linkPlane.rotation.set(-Math.PI / 2, 0, 0);
+      linkPlane.scale.set(sz.x * 0.82, sz.z * 0.72, 1);
+    } else {
+      linkPlane.up.set(0, 1, 0);
+      linkPlane.lookAt(linkPlane.position.clone().add(n)); // readable face toward the room
+      linkPlane.scale.set((ax === 'x' ? sz.z : sz.x) * 0.82, sz.y * 0.72, 1);
+    }
+    linkPlane.visible = true;
+  }
+  function hideLinkOnWall() { if (linkPlane) linkPlane.visible = false; }
+
+  // gently fly the orbit target + camera to a (target, eye) pair, arcing
+  // around the room's Y axis so transitions feel orbital, not a straight slide
   let flyAnim = null;
   function flyTo(target, eye) {
-    flyAnim = { fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(), toP: eye.clone(), t: 0 };
+    const c = bounds ? bounds.getBoundingSphere(new THREE.Sphere()).center : new THREE.Vector3();
+    flyAnim = { c, fromT: controls.target.clone(), toT: target.clone(), fromP: camera.position.clone(), toP: eye.clone(), t: 0 };
   }
   function focusSurface(s) {
     if (!s) return;
@@ -499,14 +559,14 @@ export function createRoomView(renderer) {
     emT.data = c.key === 'data' ? 1 : 0;
     emT.patch = c.key === 'patch' ? 1 : 0;
     emT.loop = c.key === 'loop' ? 1 : 0;
-    emT.meta = (c.key === 'meta' || c.key === 'return') ? 1 : 0;
+    emT.meta = c.key === 'meta' ? 1 : 0;
     surfaces.forEach((s, k) => highlight(k, false));
     if (c.key === 'patch') {
       [surfBy('LeftWall'), surfBy('RightWall')].forEach((s) => { const k = surfaces.indexOf(s); if (k >= 0) highlight(k, true); });
     } else {
       const k = surfaces.indexOf(surfBy(c.mesh)); if (k >= 0) highlight(k, true);
     }
-    const def = SURFACES.find((d) => d.mesh === (c.key === 'return' ? 'BackWall' : c.mesh));
+    const def = SURFACES.find((d) => d.mesh === c.mesh);
     if (def) showCard(def);
     if (fly) focusForPhase(c.key);
     player.setActive(i);
@@ -514,17 +574,27 @@ export function createRoomView(renderer) {
 
   // camera vantage per phase (mirrors clicking a surface marker)
   function focusForPhase(key) {
-    if (key === 'data') return focusSurface(surfBy('Floor'));
+    if (key === 'data') {
+      const floor = surfBy('Floor'); if (!floor) return;
+      const c = floor.center.clone();
+      const fs = new THREE.Box3().setFromObject(floor.mesh).getSize(new THREE.Vector3());
+      const span = Math.max(fs.x, fs.z);
+      const eye = c.clone();
+      eye.y = c.y + span * 0.95;                 // high enough to read the whole floor
+      const back = surfBy('BackWall');           // 3/4 from the rear, not pure top-down
+      if (back) eye.addScaledVector(back.center.clone().sub(c).setY(0).normalize(), span * 0.5);
+      return flyTo(c, eye);
+    }
     if (key === 'loop') return focusSurface(surfBy('FrontWall'));
-    if (key === 'meta' || key === 'return') return focusSurface(surfBy('BackWall'));
+    if (key === 'meta') return focusSurface(surfBy('BackWall'));
     if (key === 'patch') {
-      // a front-elevated 3/4 vantage so both side walls (and the wave) read
+      // a front-elevated 3/4 vantage, pulled back enough to read both full side walls
       const front = surfBy('FrontWall'), back = surfBy('BackWall');
       if (!front || !back || !bounds) return;
       const center = bounds.getBoundingSphere(new THREE.Sphere()).center;
       const dir = front.center.clone().sub(back.center).setY(0).normalize(); // toward front
-      const dist = FIT_SIZE * 0.7;
-      const eye = center.clone().addScaledVector(dir, dist * 0.6);
+      const dist = FIT_SIZE * 1.15;
+      const eye = center.clone().addScaledVector(dir, dist * 0.78);
       eye.y = center.y + dist * 0.5;
       flyTo(center, eye);
     }
@@ -565,11 +635,25 @@ export function createRoomView(renderer) {
 
   function update(dt) {
     if (flyAnim) {
-      flyAnim.t = Math.min(1, flyAnim.t + dt / 1.1);
-      const e = flyAnim.t < 0.5 ? 2 * flyAnim.t * flyAnim.t : 1 - Math.pow(-2 * flyAnim.t + 2, 2) / 2;
-      controls.target.lerpVectors(flyAnim.fromT, flyAnim.toT, e);
-      camera.position.lerpVectors(flyAnim.fromP, flyAnim.toP, e);
-      if (flyAnim.t >= 1) flyAnim = null;
+      const a = flyAnim;
+      a.t = Math.min(1, a.t + dt / 1.5);
+      const ease = (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+      const clamp01 = (x) => Math.max(0, Math.min(1, x));
+      // translate (radius + height) first, then orbit around Y — so a top/floor
+      // vantage is reached before the rotation swings around
+      const eMove = ease(clamp01(a.t / 0.6));
+      const eAng = ease(clamp01((a.t - 0.3) / 0.7));
+      const c = a.c, fp = a.fromP, tp = a.toP;
+      const a0 = Math.atan2(fp.z - c.z, fp.x - c.x);
+      const a1 = Math.atan2(tp.z - c.z, tp.x - c.x);
+      let da = a1 - a0;
+      da = ((da + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; // shortest arc
+      const r0 = Math.hypot(fp.x - c.x, fp.z - c.z);
+      const r1 = Math.hypot(tp.x - c.x, tp.z - c.z);
+      const ang = a0 + da * eAng, r = r0 + (r1 - r0) * eMove, y = fp.y + (tp.y - fp.y) * eMove;
+      camera.position.set(c.x + Math.cos(ang) * r, y, c.z + Math.sin(ang) * r);
+      controls.target.lerpVectors(a.fromT, a.toT, eMove);
+      if (a.t >= 1) flyAnim = null;
     }
     if (viewHelper.animating) viewHelper.update(dt);
 
