@@ -102,14 +102,22 @@ export class ScriptPage {
 
     const body = document.createElement('div'); body.className = 'sp-body';
     this.bodyEl = body;
-    p.paras.forEach((text) => {
-      const pEl = document.createElement('p'); pEl.className = 'sp-para';
+    p.paras.forEach((entry) => {
+      const text = typeof entry === 'string' ? entry : entry.text;
+      const speak = typeof entry === 'string' ? entry : (entry.speak || entry.text);
+      const cls = (typeof entry === 'object' && entry.cls) ? ' ' + entry.cls : '';
+      const pEl = document.createElement('p'); pEl.className = 'sp-para' + cls;
       const words = this.wrapWords(text, pEl);
       body.appendChild(pEl);
-      this.paras.push({ el: pEl, text, words });
+      this.paras.push({ el: pEl, speak, words });
     });
     if (p.code) { const c = document.createElement('pre'); c.className = 'sp-codeblock'; c.textContent = p.code; body.appendChild(c); }
-    if (p.media) body.appendChild(this.media(p.media));
+    if (p.media) {
+      const list = Array.isArray(p.media) ? p.media : [p.media];
+      const row = document.createElement('div'); row.className = 'sp-media-row';
+      list.forEach((m) => row.appendChild(this.media(m)));
+      body.appendChild(row);
+    }
     wrap.appendChild(body);
 
     this.stage.innerHTML = '';
@@ -157,8 +165,9 @@ export class ScriptPage {
   clearBootTimers() { this.bootTimers.forEach(clearTimeout); this.bootTimers = []; }
 
   media(m) {
-    const box = document.createElement('div'); box.className = 'sp-media';
-    if (m.type === 'iframe') box.innerHTML = `<iframe src="${m.src}" loading="lazy" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    const box = document.createElement('div'); box.className = 'sp-media sp-media-' + m.type;
+    if (m.type === 'youtube') box.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${m.src}" loading="lazy" title="${m.caption || 'video'}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    else if (m.type === 'iframe') box.innerHTML = `<iframe src="${m.src}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
     else if (m.type === 'video') box.innerHTML = `<video src="${m.src}" controls playsinline></video>`;
     else if (m.type === 'html') box.innerHTML = m.html;
     if (m.caption) box.insertAdjacentHTML('beforeend', `<span class="sp-cap">${m.caption}</span>`);
@@ -200,7 +209,7 @@ export class ScriptPage {
     const para = this.paras[idx];
     this.paras.forEach((q) => q.el.classList.remove('active'));
     para.el.classList.add('active');
-    const u = new SpeechSynthesisUtterance(para.text);
+    const u = new SpeechSynthesisUtterance(para.speak);
     u.rate = 0.95; u.pitch = 0.86; if (this.voice) u.voice = this.voice;
     let lit = -1;
     u.onboundary = (e) => {

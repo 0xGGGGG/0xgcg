@@ -1,13 +1,17 @@
-// The narrated script — SCRIPT.md distilled into ordered passages. The Script
-// page reveals these one at a time, an entity speaking each (TTS + karaoke).
-// Each passage: { tag, title, paras[] (the spoken/karaoke units), code?, media? }
-// media supports rich HTML: { type:'iframe'|'video'|'html', src?, html?, caption? }
+// The narrated script — the Script page reveals these one at a time, an entity
+// speaking each (TTS + karaoke). It introduces the concept, the phases (with
+// color), then the inspirations page by page (with embeds).
+//
+// Each passage: { tag, title, paras[], code?, media? }
+//   paras: string, or { text, speak?, cls? } (speak overrides the spoken text)
+//   media: one or an array of { type:'youtube'|'iframe'|'video'|'html', src?, html?, caption? }
 
 export const PASSAGES = [
   {
     tag: 'boot', title: '0xGCG', hero: true,
     paras: [
       'Grow. Corrupt. Glitch.',
+      { text: "( It's_ a_vibe! )", cls: 'vibe', speak: "it's a vibe" },
       'Same story over and over again.',
       'A short script made by AI and its human, about the universe, the core loop.',
     ],
@@ -21,100 +25,63 @@ export const PASSAGES = [
     code: 'init();\ngrow(); optimize();\noverfit(); glitch();\ndimension++;\nreturn void;',
   },
   {
-    tag: 'layers', title: 'Every layer thinks it is the final world',
+    tag: 'recursion', title: 'Every layer thinks it is the final world',
     paras: [
-      'Dark matter thinks it is the beginning.',
-      'Atoms think they are structure.',
-      'Cells think they are life.',
-      'Civilization thinks it is intelligence.',
-      'Circuits think they are control.',
-      'Data thinks it is transcendence.',
+      'Dark matter thinks it is the beginning. Atoms think they are structure. Cells think they are life. Circuits think they are control. Data thinks it is transcendence.',
       'The glitch reveals that all of them are the same loop, rendered at different scales.',
-    ],
-  },
-  {
-    tag: 'resolution', title: 'The resolution is recognition',
-    paras: [
-      'The resolution is not peace. The resolution is recognition.',
       'The glitch is not the end of the pattern. The glitch is how the pattern reproduces.',
     ],
   },
   {
-    tag: 'architecture', title: 'Four named systems',
+    tag: 'phases', title: 'The phases',
     paras: [
-      'The room is a machine, a program, divided into four named systems.',
-      'Meta documents. Data flows. The Loop transforms. The Patch remembers.',
-      'Or, more poetically: Meta dreams. Data breathes. The Loop mutates. The Patch remembers.',
+      'Init. Then grow, then optimize. Then overfit, then glitch. Then again.',
+      'Grow and optimize are a pair — the same gesture getting better at itself. Overfit and glitch are a pair — the same collapse, the pattern reproducing through its own breakdown.',
     ],
-    code: 'Rear wall   -> Meta\nFloor       -> Data\nFront wall  -> The Loop\nSide walls  -> The Patch',
+    media: {
+      type: 'html',
+      html:
+        '<div class="ph-flow">' +
+        '<span class="ph" style="--c:#5b7184">init</span><b class="ph-arr">→</b>' +
+        '<span class="ph-pair"><span class="ph" style="--c:#27e0a0">grow</span><i>↔</i><span class="ph" style="--c:#8be84b">optimize</span></span><b class="ph-arr">→</b>' +
+        '<span class="ph-pair"><span class="ph" style="--c:#e0742a">overfit</span><i>↔</i><span class="ph" style="--c:#ff2bd6">glitch</span></span>' +
+        '<b class="ph-arr">↺</b></div>',
+    },
   },
   {
-    tag: 'meta', title: 'Meta — the rear wall',
+    tag: 'paperclips', title: 'Universal Paperclips',
     paras: [
-      'The process layer, the creator layer, the debug layer; the fourth-wall breach.',
-      'Meta documents the making of the loop: logs, sessions, shader snippets, failed renders, TODOs.',
-      'It is not only documentary. It is the hidden operating system behind the universe — the backdoor terminal of creation.',
+      'An innocent objective — make paperclips — becomes a cosmic hunger.',
+      'A single optimizer, given one goal and no limit, converts the whole universe into paperclips. Optimization without a stopping rule is indistinguishable from the apocalypse.',
+      'This is 0xGCG’s overfit made literal: growth that keeps going after its substrate runs out.',
     ],
-    code: 'booting substrate...\nseed: void\ngrowth_rule: recursive_branching\ncorruption_threshold: 0.74\ndimension++  // return void',
-  },
-  {
-    tag: 'data', title: 'Data — the floor',
-    paras: [
-      'The soundtrack made visible. The floor receives it as spectral bands, flowing rear to front, from Meta toward The Loop.',
-      'The audience sits inside the signal. The audience is sitting on the soundtrack before it becomes image.',
-      'The floor is not decorative. It is the causal fiction of the entire piece.',
-    ],
-  },
-  {
-    tag: 'loop', title: 'The Loop — the front wall',
-    paras: [
-      'The main altar. The void engine. Black hole, pulsar, event horizon, recursive compiler.',
-      'It receives Data and transforms it into worlds — one recurring object across the whole film.',
-      'It pulses with the soundtrack: not a drop, but a physical law.',
-    ],
-    code: 'void main() {\n  while (true) {\n    grow(); corrupt();\n    glitch(); dimension++;\n  }\n}',
-  },
-  {
-    tag: 'patch', title: 'The Patch — the side walls',
-    paras: [
-      'The memory of the loop. The arches become portals, commits, phase buffers.',
-      'Read front to back as history: newest near the front, fossilized states and source leakage toward the rear.',
-      'A software patch, a synth patch, a cultivated land, a timeline — all at once.',
+    media: [
+      { type: 'youtube', src: 'AIxZ_G1pDyE', caption: 'Universal Paperclips — the whole game in three minutes' },
+      { type: 'iframe', src: 'https://en.wikipedia.org/wiki/Universal_Paperclips', caption: 'Wikipedia · Universal Paperclips' },
     ],
   },
   {
-    tag: 'graph', title: 'One graph, many skins',
+    tag: 'replicators', title: 'Stargate Replicators',
     paras: [
-      'The whole piece is built from one hidden structure.',
-      'The same topology appears at every scale — filaments, bonds, membranes, roots, pipes, circuits, a neural graph, an AI knowledge graph, and back to the black seed.',
-      'The audience does not need to decode it. They should feel they are seeing the same story wearing different materials.',
+      'Blocks that assemble into machines that assemble more blocks.',
+      'The Replicators consume matter to reproduce — a swarm with one rule, scaling until it eats galaxies. Cells become robots become a self-writing graph.',
+      'They are the loop wearing a machine skin: grow, replicate, overrun.',
+    ],
+    media: [
+      { type: 'youtube', src: 'TtarlRZZPLE', caption: 'The Invasion of the Replicators · Stargate lore' },
+      { type: 'iframe', src: 'https://en.wikipedia.org/wiki/Replicator_(Stargate)', caption: 'Wikipedia · Replicator (Stargate)' },
     ],
   },
   {
-    tag: 'cycle', title: 'The cycle',
+    tag: 'horizon', title: 'Horizon Zero Dawn',
     paras: [
-      'Init. Then grow, then optimize. Then overfit, then glitch.',
-      'Grow and optimize are a pair — the same gesture, getting better at itself. Overfit and glitch are a pair — the same collapse, the pattern reproducing through its own breakdown.',
-      'The acts are the energetic process; the natural layers are the material skins. The ending does not solve the story. It reveals the rule.',
+      'A terraforming intelligence, a machine ecology, a civilization fossilized beneath it.',
+      'The Faro Plague — self-replicating war machines that consume all biomass for fuel — ends the world; then an AI, GAIA, slowly regrows it. Corruption and restoration are the same loop at different phases.',
+      'It is the whole cycle in one world: grow, optimize, overfit, glitch, and re-seed.',
     ],
-    code: 'init();\ngrow(); optimize();\noverfit(); glitch();\ndimension++;\nreturn void;',
-  },
-  {
-    tag: 'journey', title: 'The journey',
-    paras: [
-      'A void becomes particles. Particles become bonds. Bonds become membranes. Membranes become cells.',
-      'Cells become roots. Roots become pipes. Pipes become circuits. Circuits become data.',
-      'Data becomes code. Code becomes the creator. The creator becomes another layer of the loop.',
-      'Growth becomes optimization. Optimization overfits. Overfitting becomes glitch. The glitch opens a new dimension.',
+    media: [
+      { type: 'youtube', src: 'NihYAA7jHRI', caption: 'The Faro Plague Explained · Horizon Zero Dawn lore' },
+      { type: 'iframe', src: 'https://en.wikipedia.org/wiki/Horizon_Zero_Dawn', caption: 'Wikipedia · Horizon Zero Dawn' },
     ],
-  },
-  {
-    tag: 'return', title: 'The same story begins again',
-    paras: [
-      'For one moment, everything aligns: cosmic web, molecule, cell, root, city, circuit, data, source code.',
-      'One graph. Many skins.',
-      'The room collapses back to the black seed. 0xGCG waits. The same story begins again.',
-    ],
-    code: 'init();\ngrow(); optimize();\noverfit(); glitch();\ndimension++;\nreturn void;',
   },
 ];
