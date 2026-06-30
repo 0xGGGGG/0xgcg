@@ -1,0 +1,18 @@
+{
+  "name": "0xgcg",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "0xGCG — Grow. Corrupt. Glitch. (three.js immersive-room concept explorer)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "0.169.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

@@ -29,3 +29,7 @@ assets/records/
 test-results/
 playwright-report/
 .playwright/
+
+# Vite build output / served assets
+public/
+_dev-shots/
