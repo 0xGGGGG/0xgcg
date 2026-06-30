@@ -19,8 +19,10 @@ export class ScriptPage {
     this.onEnter = onEnter;
     this.i = 0;
     this.playing = false;
+    this.paused = false; // true only while paused mid-passage (distinct from the engine's flag)
     this.paras = [];     // [{ el, words:[{el,s,e}] }]
     this.paraIdx = 0;
+    this.speakGen = 0;   // bumped on every nav/cancel; stale utterance callbacks are ignored
     this.voice = null;
     this.tts = window.speechSynthesis || null;
 
@@ -220,7 +222,9 @@ export class ScriptPage {
 
   speakTitle() {
     this.titleEl.classList.add('active');
+    const gen = this.speakGen;
     const after = () => {
+      if (gen !== this.speakGen) return;          // superseded by a newer nav
       this.titleWords.forEach((w) => w.el.classList.add('done'));
       this.titleEl.classList.remove('active');
       this._revealTimer = setTimeout(() => { this.revealBody(); this.speakFrom(0); }, 750);
@@ -230,12 +234,13 @@ export class ScriptPage {
     u.rate = 0.9; u.pitch = 0.8; if (this.voice) u.voice = this.voice;
     let lit = -1;
     u.onboundary = (e) => {
+      if (gen !== this.speakGen) return;
       const ci = e.charIndex || 0;
       const wi = this.titleWords.findIndex((w) => ci >= w.s && ci < w.e);
       if (wi >= 0 && wi !== lit) { if (lit >= 0) this.titleWords[lit].el.classList.remove('lit'); this.titleWords[wi].el.classList.add('lit'); lit = wi; }
     };
     u.onend = after;
-    this.curUtter = u; this.tts.cancel(); this.tts.speak(u);
+    this._speak(u);
   }
 
   speakFrom(idx) {
@@ -245,18 +250,22 @@ export class ScriptPage {
     const para = this.paras[idx];
     this.paras.forEach((q) => q.el.classList.remove('active'));
     para.el.classList.add('active');
+    const gen = this.speakGen;
     const u = new SpeechSynthesisUtterance(para.speak);
     u.rate = 0.95; u.pitch = 0.86; if (this.voice) u.voice = this.voice;
     let lit = -1;
     u.onboundary = (e) => {
+      if (gen !== this.speakGen) return;
       const ci = e.charIndex || 0;
       const wi = para.words.findIndex((w) => ci >= w.s && ci < w.e);
       if (wi >= 0 && wi !== lit) { if (lit >= 0) para.words[lit].el.classList.remove('lit'); para.words[wi].el.classList.add('lit'); lit = wi; }
     };
-    u.onend = () => { para.words.forEach((w) => w.el.classList.add('done')); para.el.classList.remove('active'); if (this.playing) this.speakFrom(idx + 1); };
-    this.curUtter = u;
-    this.tts.cancel();
-    this.tts.speak(u);
+    u.onend = () => {
+      if (gen !== this.speakGen) return;          // a newer passage took over
+      para.words.forEach((w) => w.el.classList.add('done')); para.el.classList.remove('active');
+      if (this.playing) this.speakFrom(idx + 1);
+    };
+    this._speak(u);
   }
 
   onPassageEnd() {
@@ -278,11 +287,13 @@ export class ScriptPage {
     else if (a === 'play') {
       if (!this.playing) {
         this.playing = true; this.setPlayBtn();
-        if (this.tts && this.tts.paused) this.tts.resume();
-        else if (!this.tts || !this.tts.speaking) this.startNarration();
+        // only resume if we actually paused *this* passage mid-utterance; after a
+        // nav (this.paused cleared) start fresh, even if the engine still reads paused
+        if (this.paused && this.tts && this.tts.paused) { this.tts.resume(); this.paused = false; }
+        else { this.paused = false; this.startNarration(); }
       } else {
         this.playing = false; this.setPlayBtn();
-        if (this.tts && this.tts.speaking) this.tts.pause();
+        if (this.tts && this.tts.speaking) { this.tts.pause(); this.paused = true; }
       }
     }
   }
@@ -293,7 +304,27 @@ export class ScriptPage {
     this.render(i); // render auto-narrates when playing
   }
 
-  stopSpeak() { if (this.tts) this.tts.cancel(); clearTimeout(this.advTimer); clearTimeout(this._revealTimer); }
+  stopSpeak() {
+    this.speakGen++;                      // invalidate any in-flight utterance callbacks
+    this.paused = false;                  // a nav abandons any paused-mid-passage state
+    if (this.tts) { this.tts.resume(); this.tts.cancel(); } // resume first so the engine isn't left stuck paused
+    clearTimeout(this.advTimer); clearTimeout(this._revealTimer); clearTimeout(this._speakTimer);
+  }
+
+  // Chrome drops a speak() issued synchronously after cancel(), so defer it a
+  // tick; the generation guard makes a superseded utterance a no-op
+  _speak(u) {
+    if (!this.tts) return;
+    const gen = this.speakGen;
+    this.curUtter = u;
+    this.tts.cancel();
+    clearTimeout(this._speakTimer);
+    this._speakTimer = setTimeout(() => {
+      if (gen !== this.speakGen || !this.playing) return;
+      if (this.tts.paused) this.tts.resume();   // never speak into a stuck-paused engine
+      this.tts.speak(u);
+    }, 80);
+  }
   stop() { this.playing = false; this.stopSpeak(); }
 
   key(e) {
