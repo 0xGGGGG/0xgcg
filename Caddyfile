@@ -1,0 +1,12 @@
+:80
+
+root * /srv
+encode zstd gzip
+
+# hashed build assets + the room model can be cached a while; index.html re-checks
+header /assets/* Cache-Control "public, max-age=604800"
+header /index.html Cache-Control "no-cache, must-revalidate"
+
+# single-page app: the view routes (/core, /layout, /script) resolve client-side
+try_files {path} /index.html
+file_server

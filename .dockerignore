@@ -1,0 +1,23 @@
+# Build context for `fly deploy` (obeys .dockerignore, NOT .gitignore).
+# Keep it tiny: only what `vite build` needs (src, index.html, styles.css,
+# config, and the curated public/). Everything below is source or output.
+
+node_modules
+dist
+.git
+.gitignore
+
+# source media — NOT runtime. The runtime subset (room FBX + panorama) lives in
+# public/ and is copied there by the curation step. records/ is 9.5GB of raw
+# recordings; assets/ is ~231MB of source textures / .blend.
+assets
+records
+_dev-shots
+
+# docs / dev-only
+*.md
+serve.py
+*.mov
+.DS_Store
+**/.DS_Store
+.claude
