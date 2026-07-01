@@ -83,18 +83,13 @@
     #params-body .prow label { align-items:center; }
     .plock { cursor:pointer; margin-right:5px; opacity:.5; font-size:11px; user-select:none; }
     .plock.on { opacity:1; color:var(--acc); }
-    /* show/hide toggle */
-    #ui-toggle { position:fixed; left:16px; top:16px; z-index:6; width:38px; height:38px; cursor:pointer;
-      font-size:17px; color:var(--acc); background:rgba(4,6,10,.72); border:1px solid rgba(39,224,160,.35);
-      border-radius:8px; backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; }
-    #ui-toggle:hover { border-color:var(--acc); color:#fff; }
-    #panel { top:64px; }
-    body.panels-hidden #panel, body.panels-hidden #params { display:none; }
-    /* mobile: single scrollable bottom sheet, legend hidden, collapsed by default */
+    /* collapse/expand toggle lives in the action row */
+    #b-collapse { flex:0 0 auto !important; width:34px; }
+    #params.collapsed #params-body { display:none; }
+    #ph-name { color:var(--acc); }
+    /* mobile: params a scrollable bottom sheet, collapsed to just the action bar by default */
     @media (max-width:720px) {
-      #panel { display:none; }
-      #params { left:8px; right:8px; width:auto; top:auto; bottom:8px; max-height:62vh; }
-      #ui-toggle { width:44px; height:44px; font-size:20px; }
+      #params { left:8px; right:8px; width:auto; top:auto; bottom:8px; max-height:64vh; }
       .hint { font-size:10px; left:8px; right:auto; bottom:6px; }
     }
   </style>
@@ -102,29 +97,22 @@
 <body>
   <canvas id="c"></canvas>
 
-  <button id="ui-toggle" title="show / hide panels" aria-label="toggle panels">☰</button>
-
-  <div id="panel" class="hud">
-    <h1>SANDBOX</h1>
-    <div class="sub">radial growth lab · 0xGCG</div>
-    <div class="phase"><b id="ph-name">INIT</b><span id="ph-num">0 / 5</span></div>
-    <ul class="legend" id="legend"></ul>
-  </div>
-
   <div id="params" class="hud">
     <div id="transport">
       <div class="row">
-        <button id="b-play">❚❚ pause</button>
+        <button id="b-play" title="play / pause">❚❚</button>
+        <button id="b-reset" title="reset params to defaults">⟲ reset</button>
         <button id="b-seed" title="roll — randomise unlocked params + new seed">⚄ roll</button>
+        <button id="b-collapse" title="collapse / expand panel">⤡</button>
       </div>
-      <label>cycle <span id="c-val"></span></label>
+      <label>cycle <span id="c-val"></span> · <b id="ph-name">INIT</b> <span id="ph-num" style="opacity:.6"></span></label>
       <input id="scrub" type="range" min="0" max="1000" value="0" />
       <label class="seedrow">dimension <span id="dim-val">0</span> · seed <input id="seed-val" type="text" spellcheck="false" title="edit seed (hex) · Enter to apply"><button id="b-share" title="copy shareable link">share ⧉</button></label>
     </div>
     <div id="params-body"></div>
   </div>
 
-  <div class="hint">space play · r roll · ☰ toggle · <a class="back" href="/">← 0xGCG</a></div>
+  <div class="hint">space play · r roll · <a class="back" href="/">← 0xGCG</a></div>
 
   <script type="module" src="/src/lab/sandbox.js"></script>
 </body>

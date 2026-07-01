@@ -6,6 +6,17 @@
 // Needs EXT_color_buffer_float (float agent state); disables gracefully if absent.
 // ---------------------------------------------------------------------------
 
+// Physarum parameter regimes (sensor angle/dist, turn, step, decay) — distinct
+// slime-mold morphologies after Jones 2010 + community tunings.
+export const PHYSARUM_PRESETS = [
+  { name: 'Network',  sensorAngle: 22, sensorDist: 0.012, turn: 18, step: 0.0022, decay: 0.94 },
+  { name: 'Filament', sensorAngle: 10, sensorDist: 0.022, turn: 8,  step: 0.0045, decay: 0.90 },
+  { name: 'Mesh',     sensorAngle: 35, sensorDist: 0.007, turn: 32, step: 0.0014, decay: 0.965 },
+  { name: 'Cells',    sensorAngle: 48, sensorDist: 0.030, turn: 42, step: 0.0020, decay: 0.92 },
+  { name: 'Vortex',   sensorAngle: 18, sensorDist: 0.016, turn: 6,  step: 0.0032, decay: 0.885 },
+  { name: 'Coral',    sensorAngle: 28, sensorDist: 0.006, turn: 24, step: 0.0011, decay: 0.975 },
+];
+
 const QUAD_V = `#version 300 es
 const vec2 V[3]=vec2[3](vec2(-1.0,-1.0),vec2(3.0,-1.0),vec2(-1.0,3.0));
 void main(){ gl_Position=vec4(V[gl_VertexID],0.0,1.0); }`;

@@ -14,7 +14,7 @@
 // ---------------------------------------------------------------------------
 
 import { FieldSim, LENIA_PRESETS, TRUCHET_PRESETS } from './fields.js';
-import { Physarum } from './physarum.js';
+import { Physarum, PHYSARUM_PRESETS } from './physarum.js';
 import { LTree, LTREE_PRESETS } from './ltree.js';
 import { WFC, WFC_STYLES } from './wfc.js';
 import { Epicycles } from './epicycles.js';
@@ -292,6 +292,7 @@ const fields = {
   wfc: new WFC(gl, { size: 512, grid: 18 }),
   epicycles: new Epicycles(gl, { size: 512 }),
 };
+for (const f of Object.values(fields)) f._defaults = { ...f.params };   // snapshot for ⟲ reset
 const MODES = ['stack', ...FIELD_MODES];
 // URL slugs: /sandbox/<slug> deep-links a mode (e.g. /sandbox/game-of-life)
 const MODE_SLUG = {}, SLUG_MODE = {};
@@ -339,15 +340,23 @@ function resize() { const dpr = Math.min(2, window.devicePixelRatio || 1); canva
 addEventListener('resize', resize); resize();
 const phaseOf = (c) => Math.min(5.999, c * 6);
 
-const legend = document.getElementById('legend');
-legend.innerHTML = LAYERS.map((l, i) => `<li data-i="${i}"><i style="background:${l.color};color:${l.color}"></i>${String(i).padStart(2, '0')} ${l.name} <em style="opacity:.5">· ${l.grow}</em></li>`).join('');
-const legendLis = [...legend.querySelectorAll('li')];
+const legend = document.getElementById('legend');   // legend overlay removed; keep null-safe for stack-layer lighting
+if (legend) legend.innerHTML = LAYERS.map((l, i) => `<li data-i="${i}"><i style="background:${l.color};color:${l.color}"></i>${String(i).padStart(2, '0')} ${l.name} <em style="opacity:.5">· ${l.grow}</em></li>`).join('');
+const legendLis = legend ? [...legend.querySelectorAll('li')] : [];
 const phName = document.getElementById('ph-name'), phNum = document.getElementById('ph-num');
 const cVal = document.getElementById('c-val'), dimVal = document.getElementById('dim-val'), seedVal = document.getElementById('seed-val');
 const scrub = document.getElementById('scrub'), bPlay = document.getElementById('b-play'), bSeed = document.getElementById('b-seed');
-const bShare = document.getElementById('b-share'), uiToggle = document.getElementById('ui-toggle');
+const bShare = document.getElementById('b-share'), bReset = document.getElementById('b-reset'), bCollapse = document.getElementById('b-collapse'), paramsPanel = document.getElementById('params');
 const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rolling
-function setPlay(on) { state.playing = on; bPlay.textContent = on ? '❚❚ pause' : '▶ play'; }
+function setPlay(on) { state.playing = on; bPlay.textContent = on ? '❚❚' : '▶'; bPlay.title = on ? 'pause' : 'play'; }
+function resetParams() {                                 // ⟲ reset: params back to this mode's defaults
+  const f = activeField();
+  if (f) {
+    if (mode === 'ltree' && f.presetIndex >= 0) f.setPreset(f.presetIndex);
+    else { if (f._defaults) Object.assign(f.params, f._defaults); if (mode === 'lenia' || mode === 'truchet') f._presetIdx = 0; f.seed(state.seed); if (f.finish) f.finish(); }
+  } else { PARAMS[selLayer] = { lag: selLayer * 0.075, seed: selLayer * 13.0, ...REVEAL_PRESET[LAYERS[selLayer].grow] }; buildFlats(); }
+  renderParams();
+}
 function showSeed() { if (document.activeElement !== seedVal) seedVal.value = state.seed.toString(16).padStart(4, '0'); }
 function reseed() { state.seed = Math.floor(Math.random() * 1e4); showSeed(); }         // new seed number only (loop uses this)
 // debounced rebuild for structural modes — leading + trailing, so a drag stays
@@ -367,9 +376,10 @@ function roll() {                                                               
 }
 bPlay.addEventListener('click', () => setPlay(!state.playing));
 bSeed.addEventListener('click', roll);
+bReset.addEventListener('click', resetParams);
 bShare.addEventListener('click', shareLink);
-uiToggle.addEventListener('click', () => document.body.classList.toggle('panels-hidden'));
-if (innerWidth <= 720) document.body.classList.add('panels-hidden');   // mobile: start collapsed
+bCollapse.addEventListener('click', () => { const c = paramsPanel.classList.toggle('collapsed'); bCollapse.textContent = c ? '⤢' : '⤡'; });
+if (innerWidth <= 720) { paramsPanel.classList.add('collapsed'); bCollapse.textContent = '⤢'; }   // mobile: start collapsed
 scrub.addEventListener('input', () => { state.c = +scrub.value / 1000; setPlay(false); });
 seedVal.addEventListener('change', () => { const v = parseInt(seedVal.value, 16); if (isFinite(v)) { state.seed = v; const f = activeField(); if (f) f.seed(v); } showSeed(); });
 seedVal.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') seedVal.blur(); });
@@ -403,7 +413,8 @@ function renderParams() {
     const wfcExtra = mode === 'wfc' ? `<div class="prow-btns"><button id="p-style">tileset: ${WFC_STYLES[fld.style]}</button></div>` : '';
     const leniaExtra = mode === 'lenia' ? `<div class="prow-btns"><button id="p-lpreset">preset: ${LENIA_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
     const truchetExtra = mode === 'truchet' ? `<div class="prow-btns"><button id="p-tpreset">preset: ${TRUCHET_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
-    const presetRow = leniaExtra + truchetExtra + wfcExtra + ltPreset;
+    const physExtra = mode === 'physarum' ? `<div class="prow-btns"><button id="p-ppreset">preset: ${PHYSARUM_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
+    const presetRow = leniaExtra + truchetExtra + physExtra + wfcExtra + ltPreset;
     const ltCustom = mode === 'ltree'
       ? `<div class="prow"><label>axiom</label><input id="lt-ax" type="text" value="${esc(fld.lsys.axiom)}" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit"></div>` +
         `<div class="prow"><label>rules · one per line (F=FF+[+F-F])</label><textarea id="lt-rules" rows="3" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit;resize:vertical">${esc(fld.lsys.rules)}</textarea></div>` +
@@ -440,13 +451,19 @@ function renderParams() {
       fld._presetIdx = i; fld.params.scale = P.scale; fld.params.width = P.width; fld.params.curve = P.curve; fld.params.speed = P.speed; fld.params.contrast = P.contrast;
       renderParams();
     });
+    if (mode === 'physarum') paramsEl.querySelector('#p-ppreset').addEventListener('click', () => {
+      const i = ((fld._presetIdx || 0) + 1) % PHYSARUM_PRESETS.length, P = PHYSARUM_PRESETS[i];
+      fld._presetIdx = i; fld.params.sensorAngle = P.sensorAngle; fld.params.sensorDist = P.sensorDist; fld.params.turn = P.turn; fld.params.step = P.step; fld.params.decay = P.decay;
+      fld.seed(state.seed); renderParams();
+    });
   } else {
     const L = LAYERS[selLayer], p = PARAMS[selLayer];
-    paramsEl.innerHTML = modeBtn + `<h2>${String(selLayer).padStart(2, '0')} · ${L.name}</h2><div class="psub">growth: ${L.grow} · click a layer · drag to tune</div>` +
-      PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-reset">reset</button><button id="p-export">export</button></div>`;
+    const layerSel = `<div class="prow" style="margin-bottom:8px"><select id="p-layer" class="mode-select" style="font-size:12px;text-transform:none;letter-spacing:.04em">${LAYERS.map((l, i) => `<option value="${i}"${i === selLayer ? ' selected' : ''}>${String(i).padStart(2, '0')} · ${l.name}</option>`).join('')}</select></div>`;
+    paramsEl.innerHTML = modeBtn + layerSel + `<div class="psub" style="margin-top:2px">growth: ${L.grow} · drag to tune</div>` +
+      PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-export">export</button></div>`;
     wireLocks();
+    paramsEl.querySelector('#p-layer').addEventListener('change', (e) => { selLayer = +e.target.value; renderParams(); });
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => inp.addEventListener('input', () => { p[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(3); buildFlats(); }));
-    paramsEl.querySelector('#p-reset').addEventListener('click', () => { PARAMS[selLayer] = { lag: selLayer * 0.075, seed: selLayer * 13.0, ...REVEAL_PRESET[L.grow] }; buildFlats(); renderParams(); });
     paramsEl.querySelector('#p-export').addEventListener('click', () => { const j = JSON.stringify(PARAMS, null, 2); if (navigator.clipboard) navigator.clipboard.writeText(j).catch(() => {}); console.log('bloom params (copied):\n' + j); });
   }
   paramsEl.querySelector('#p-mode').addEventListener('change', (e) => switchMode(e.target.value));
@@ -457,7 +474,7 @@ function encodeConfig() {
   const f = activeField(), cfg = { m: mode, s: state.seed };
   if (f) {
     cfg.p = { ...f.params };
-    if (mode === 'lenia' || mode === 'truchet') cfg.pi = f._presetIdx || 0;
+    if (mode === 'lenia' || mode === 'truchet' || mode === 'physarum') cfg.pi = f._presetIdx || 0;
     else if (mode === 'wfc') cfg.st = f.style;
     else if (mode === 'ltree') { cfg.pi = f.presetIndex; cfg.ls = { a: f.lsys.axiom, r: f.lsys.rules, d: f.lsys.draw }; }
     else if (mode === 'gameoflife') { cfg.gm = golMosh ? 1 : 0; cfg.ga = golMoshAmt; }
@@ -477,7 +494,7 @@ function applyConfig(b64) {
   if (f) {
     if (cfg.p) Object.assign(f.params, cfg.p);
     if (mode === 'ltree' && cfg.ls) { f.lsys = { axiom: cfg.ls.a, rules: cfg.ls.r, draw: cfg.ls.d || 'FG' }; f.presetIndex = cfg.pi != null ? cfg.pi : -1; }
-    else if ((mode === 'lenia' || mode === 'truchet') && cfg.pi != null) f._presetIdx = cfg.pi;
+    else if ((mode === 'lenia' || mode === 'truchet' || mode === 'physarum') && cfg.pi != null) f._presetIdx = cfg.pi;
     if (mode === 'wfc' && cfg.st != null) f.style = cfg.st;
     if (mode === 'gameoflife') { if (cfg.gm != null) golMosh = !!cfg.gm; if (cfg.ga != null) golMoshAmt = cfg.ga; }
     f.seed(state.seed);
@@ -487,7 +504,7 @@ function applyConfig(b64) {
 legendLis.forEach((li, i) => li.addEventListener('click', () => { selLayer = i; legendLis.forEach((x, k) => x.classList.toggle('sel', k === i)); if (!activeField()) renderParams(); }));
 const sharedCfg = new URLSearchParams(location.search).get('c');
 if (sharedCfg) applyConfig(sharedCfg);
-legendLis[selLayer].classList.add('sel');
+legendLis[selLayer]?.classList.add('sel');
 renderParams();
 try { history.replaceState(null, '', '/sandbox/' + MODE_SLUG[mode]); } catch {}   // canonical URL on load
 
