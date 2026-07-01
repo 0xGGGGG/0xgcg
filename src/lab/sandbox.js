@@ -348,6 +348,7 @@ const cVal = document.getElementById('c-val'), dimVal = document.getElementById(
 const scrub = document.getElementById('scrub'), bPlay = document.getElementById('b-play'), bSeed = document.getElementById('b-seed');
 const bShare = document.getElementById('b-share'), bReset = document.getElementById('b-reset'), bCollapse = document.getElementById('b-collapse'), paramsPanel = document.getElementById('params');
 const bSave = document.getElementById('b-save');
+const savedRow = document.getElementById('saved-row'), savedSel = document.getElementById('saved-sel'), bDel = document.getElementById('b-del');
 const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rolling
 // ---- action icons (inline SVG) ----
 const _svg = (w, inner, fill) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="${fill || 'none'}" stroke="${fill ? 'none' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
@@ -396,6 +397,9 @@ bSeed.addEventListener('click', roll);
 bReset.addEventListener('click', resetParams);
 bShare.addEventListener('click', shareLink);
 bSave.addEventListener('click', savePreset);
+savedSel.addEventListener('change', () => { const i = +savedSel.value; if (i >= 0) loadSaved(i); });
+bDel.addEventListener('click', () => { const i = +savedSel.value; if (i >= 0) deleteSaved(i); });
+refreshSaved();
 bCollapse.addEventListener('click', () => { paramsPanel.classList.toggle('collapsed'); setCollapseIcon(); });
 if (innerWidth <= 720) paramsPanel.classList.add('collapsed');   // mobile: start collapsed
 setPlay(state.playing); setCollapseIcon();
@@ -509,14 +513,29 @@ function shareLink() {
 // ---- save presets to localStorage ---------------------------------------
 const SAVE_KEY = 'sandbox.presets';
 function loadSaves() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; } catch { return []; } }
+function writeSaves(saves) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(saves)); } catch (e) { /* quota / private mode */ } }
 function savePreset() {
   const f = activeField(), label = MODE_SLUG[mode] + (f && mode === 'wfc' ? '·' + WFC_STYLES[f.style] : '') + ' · ' + state.seed.toString(16);
   const saves = loadSaves();
   saves.push({ label, mode, seed: state.seed, cfg: encodeConfig(), ts: Date.now() });
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(saves)); } catch (e) { /* quota / private mode */ }
+  writeSaves(saves); refreshSaved(saves.length - 1);
   bSave.innerHTML = ICON_CHECK; bSave.title = 'saved · ' + saves.length + ' preset' + (saves.length === 1 ? '' : 's');
   setTimeout(() => { bSave.innerHTML = ICON_SAVE; bSave.title = 'save preset to this browser'; }, 1400);
 }
+// populate the loader dropdown (select `sel` index if given)
+function refreshSaved(sel = -1) {
+  const saves = loadSaves();
+  savedRow.classList.toggle('empty', saves.length === 0);
+  savedSel.innerHTML = `<option value="-1">load saved…</option>` + saves.map((s, i) => `<option value="${i}">${(s.label || s.mode || '?').replace(/</g, '')}</option>`).join('');
+  savedSel.value = String(sel);
+}
+function loadSaved(i) {
+  const s = loadSaves()[i]; if (!s) return;
+  applyConfig(s.cfg);                                   // sets mode + params + seed, reseeds the field
+  try { history.replaceState(null, '', '/sandbox/' + MODE_SLUG[mode]); } catch {}
+  renderParams(); showSeed();
+}
+function deleteSaved(i) { const saves = loadSaves(); if (i < 0 || i >= saves.length) return; saves.splice(i, 1); writeSaves(saves); refreshSaved(); }
 function applyConfig(b64) {
   let cfg; try { cfg = JSON.parse(atob(b64)); } catch { return; }
   if (!cfg || !MODES.includes(cfg.m)) return;
