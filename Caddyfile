@@ -7,6 +7,10 @@ encode zstd gzip
 header /assets/* Cache-Control "public, max-age=604800"
 header /index.html Cache-Control "no-cache, must-revalidate"
 
+# the sandbox lab + its deep-linked modes (/sandbox, /sandbox/<mode>) serve sandbox.html
+@sandbox path /sandbox /sandbox/*
+rewrite @sandbox /sandbox.html
+
 # single-page app: the view routes (/core, /layout, /script) resolve client-side
 try_files {path} /index.html
 file_server

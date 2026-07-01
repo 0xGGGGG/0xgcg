@@ -235,6 +235,10 @@ canvas{display:block}
   background:rgba(20,20,20,.45);border:1px solid rgba(180,180,180,.18);
   border-radius:99px;padding:5px 14px;cursor:pointer;transition:all .2s}
 #view-nav button:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+#view-nav a#nav-sandbox{font:inherit;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);background:rgba(20,20,20,.45);border:1px solid rgba(180,180,180,.18);
+  border-radius:99px;padding:5px 14px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center}
+#view-nav a#nav-sandbox:hover{color:#27e0a0;border-color:rgba(39,224,160,.6)}
 #view-nav button.on{color:#fff;border-color:#fff;
   box-shadow:0 0 16px rgba(255,255,255,.18);background:rgba(255,255,255,.06)}
 

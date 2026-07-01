@@ -33,3 +33,6 @@ playwright-report/
 # Vite build output / served assets
 public/
 _dev-shots/
+
+# downloaded reference material (algorithms, media)
+_refs/

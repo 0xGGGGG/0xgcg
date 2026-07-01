@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <base href="/" />
+  <title>0xGCG · Sandbox — growth lab</title>
+  <style>
+    :root { --fg:#cfe0d8; --dim:#6f7d77; --acc:#27e0a0; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; height:100%; background:#04060a; color:var(--fg);
+      font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; overflow:hidden; }
+    #c { position:fixed; inset:0; width:100%; height:100%; display:block; }
+    .hud { position:fixed; z-index:2; }
+    #panel { left:18px; top:18px; width:230px; padding:14px 14px 12px;
+      background:rgba(4,6,10,.62); border:1px solid rgba(39,224,160,.22);
+      border-radius:8px; backdrop-filter:blur(6px); }
+    #panel h1 { margin:0 0 2px; font-size:13px; letter-spacing:.16em; color:#fff; }
+    #panel .sub { color:var(--dim); letter-spacing:.06em; margin-bottom:10px; }
+    .phase { display:flex; align-items:baseline; gap:8px; margin:8px 0 10px; }
+    .phase b { font-size:15px; letter-spacing:.18em; color:var(--acc); }
+    .phase span { color:var(--dim); }
+    .legend { list-style:none; margin:8px 0 0; padding:0; }
+    .legend li { display:flex; align-items:center; gap:8px; padding:1px 0; color:var(--dim); }
+    .legend li.on { color:var(--fg); }
+    .legend i { width:8px; height:8px; border-radius:2px; flex:none; opacity:.5; }
+    .legend li.on i { opacity:1; box-shadow:0 0 8px currentColor; }
+    #ctl { left:18px; bottom:18px; width:230px; padding:12px 14px;
+      background:rgba(4,6,10,.62); border:1px solid rgba(39,224,160,.22);
+      border-radius:8px; backdrop-filter:blur(6px); }
+    #ctl .row { display:flex; gap:6px; margin-bottom:8px; }
+    #ctl button { flex:1; padding:6px 4px; cursor:pointer; color:var(--fg);
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14);
+      border-radius:5px; font:inherit; letter-spacing:.04em; }
+    #ctl button:hover { border-color:var(--acc); color:#fff; }
+    #ctl label { display:block; color:var(--dim); margin:6px 0 2px; letter-spacing:.05em; }
+    #ctl input[type=range] { width:100%; accent-color:var(--acc); }
+    .hint { position:fixed; right:16px; bottom:14px; color:var(--dim); z-index:2; }
+    a.back { color:var(--dim); text-decoration:none; }
+    a.back:hover { color:var(--acc); }
+    .legend li { cursor:pointer; }
+    .legend li.sel { color:#fff; }
+    .legend li.sel i { box-shadow:0 0 10px currentColor; }
+    #params { right:18px; top:18px; width:248px; max-height:calc(100vh - 36px); overflow:auto;
+      padding:12px 14px; background:rgba(4,6,10,.62); border:1px solid rgba(39,224,160,.22);
+      border-radius:8px; backdrop-filter:blur(6px); }
+    #params h2 { margin:0 0 2px; font-size:12px; letter-spacing:.12em; color:#fff; }
+    #params .psub { color:var(--dim); margin-bottom:10px; }
+    #params .prow { margin-bottom:9px; }
+    #params .prow label { display:flex; justify-content:space-between; color:var(--dim); margin-bottom:2px; }
+    #params .prow label b { color:var(--fg); font-weight:400; }
+    #params input[type=range] { width:100%; accent-color:var(--acc); }
+    #params .prow-btns { display:flex; gap:6px; margin-top:10px; }
+    #params button { flex:1; padding:6px 4px; cursor:pointer; color:var(--fg);
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14);
+      border-radius:5px; font:inherit; letter-spacing:.04em; }
+    #params button:hover { border-color:var(--acc); color:#fff; }
+    .mode-select { width:100%; -webkit-appearance:none; appearance:none;
+      font:inherit; font-size:15px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+      color:#fff; background:rgba(39,224,160,.08); border:1px solid rgba(39,224,160,.4);
+      border-radius:7px; padding:10px 32px 10px 12px; cursor:pointer; transition:all .15s;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%2327e0a0' stroke-width='1.6'/></svg>");
+      background-repeat:no-repeat; background-position:right 12px center; }
+    .mode-select:hover { border-color:rgba(39,224,160,.75); background-color:rgba(39,224,160,.16); }
+    .mode-select:focus { outline:none; border-color:var(--acc); box-shadow:0 0 12px rgba(39,224,160,.3); }
+    .mode-select option { background:#0a1310; color:#cfe0d8; font-size:13px; letter-spacing:normal; text-transform:none; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="panel" class="hud">
+    <h1>SANDBOX</h1>
+    <div class="sub">radial growth lab · 0xGCG</div>
+    <div class="phase"><b id="ph-name">INIT</b><span id="ph-num">0 / 5</span></div>
+    <ul class="legend" id="legend"></ul>
+  </div>
+
+  <div id="ctl" class="hud">
+    <div class="row">
+      <button id="b-play">❚❚ pause</button>
+      <button id="b-seed">⟳ seed</button>
+    </div>
+    <label>cycle <span id="c-val"></span></label>
+    <input id="scrub" type="range" min="0" max="1000" value="0" />
+    <label>dimension <span id="dim-val">0</span> · seed <span id="seed-val">—</span></label>
+  </div>
+
+  <div id="params" class="hud"></div>
+
+  <div class="hint">space play · r reseed · click a layer to tune · <a class="back" href="/">← 0xGCG</a></div>
+
+  <script type="module" src="/src/lab/sandbox.js"></script>
+</body>
+</html>
