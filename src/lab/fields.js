@@ -134,7 +134,7 @@ void main(){
 };
 
 const DEFAULTS = {
-  lenia:      { mu: 0.245, sigma: 0.030, dt: 0.142, muK: 0.340, sigK: 0.150 },
+  lenia:      { mu: 0.245, sigma: 0.021, dt: 0.068, muK: 0.372, sigK: 0.170 },
   smoothlife: { b1: 0.257, b2: 0.336, d1: 0.330, d2: 0.549, dt: 0.30 },
   grayscott:  { f: 0.017, k: 0.051, Du: 0.921, Dv: 0.301, dt: 0.450 },
   voronoi:    { scale: 9.175, jitter: 0.590, edge: 0.010, speed: 1.275, contrast: 1.940 },
@@ -172,7 +172,8 @@ const STEPS = { lenia: 2, smoothlife: 2, grayscott: 10, voronoi: 1, truchet: 1, 
 function compile(gl, type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error('field compile:\n' + gl.getShaderInfoLog(s)); throw new Error('field shader'); } return s; }
 
 export class FieldSim {
-  constructor(gl, { type = 'lenia', size = 256, R = 12 } = {}) {
+  constructor(gl, { type = 'lenia', size = 256, R = 12, seed0 = null } = {}) {
+    this.seed0 = seed0;   // fixed default seed (reproducible pattern) or null = random
     this.gl = gl; this.type = type; this.size = size; this.R = R;
     this.params = { ...DEFAULTS[type] };
     this.defs = FIELD_DEFS[type];
@@ -188,7 +189,7 @@ export class FieldSim {
     this.pU = {}; for (const d of this.defs) this.pU[d.key] = gl.getUniformLocation(p, 'u_' + d.key);
     this.vao = gl.createVertexArray();
     this.a = this._target(); this.b = this._target();
-    this.seed(1);
+    this.seed(seed0 != null ? seed0 : 1);
   }
 
   _target() {

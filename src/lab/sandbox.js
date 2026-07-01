@@ -281,7 +281,7 @@ buildFlats();
 const FIELD_MODES = ['lenia', 'smoothlife', 'gameoflife', 'grayscott', 'voronoi', 'truchet', 'physarum', 'ltree', 'wfc', 'epicycles'];
 const FIELD_LABEL = { stack: 'Stacked', lenia: 'Lenia', smoothlife: 'SmoothLife', gameoflife: 'Game of Life', grayscott: 'Gray-Scott', voronoi: 'Voronoi', truchet: 'Truchet', physarum: 'Physarum', ltree: 'L-Tree', wfc: 'WFC', epicycles: 'Epicycles' };
 const fields = {
-  lenia: new FieldSim(gl, { type: 'lenia', size: 256, R: 12 }),
+  lenia: new FieldSim(gl, { type: 'lenia', size: 256, R: 12, seed0: 0x1f65 }),
   smoothlife: new FieldSim(gl, { type: 'smoothlife', size: 256, R: 11 }),
   gameoflife: new FieldSim(gl, { type: 'gameoflife', size: 220 }),
   grayscott: new FieldSim(gl, { type: 'grayscott', size: 256 }),
@@ -302,7 +302,7 @@ let golMosh = true;    // Game of Life datamosh-over-texture toggle (default on)
 let golMoshAmt = 0.0;  // datamosh strength (0..2.5), default off
 const activeField = () => (mode === 'stack' ? null : fields[mode]);
 function switchMode(m, push = true) {
-  mode = m; const f = activeField(); if (f) f.seed(state.seed);
+  mode = m; const f = activeField(); if (f) f.seed(f.seed0 != null ? f.seed0 : state.seed);
   if (push) { try { history.replaceState(null, '', '/sandbox/' + MODE_SLUG[m]); } catch {} }
   renderParams();
 }
