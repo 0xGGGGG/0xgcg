@@ -374,10 +374,7 @@ function roll() {                                                               
   for (const d of defs) { if (locks[mode + ':' + d.key]) continue; params[d.key] = d.min + Math.random() * (d.max - d.min); }
   reseed(); if (f) f.seed(state.seed); else buildFlats(); renderParams();
 }
-// fullscreen-style toggle icons (feather maximize-2 / minimize-2)
-const ICON_EXPAND = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
-const ICON_SHRINK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
-const setCollapseIcon = () => { bCollapse.innerHTML = paramsPanel.classList.contains('collapsed') ? ICON_EXPAND : ICON_SHRINK; };
+const setCollapseIcon = () => { bCollapse.textContent = paramsPanel.classList.contains('collapsed') ? '⌄' : '⌃'; };   // caret down = expand, up = collapse
 bPlay.addEventListener('click', () => setPlay(!state.playing));
 bSeed.addEventListener('click', roll);
 bReset.addEventListener('click', resetParams);
