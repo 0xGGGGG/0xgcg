@@ -347,6 +347,7 @@ const phName = document.getElementById('ph-name'), phNum = document.getElementBy
 const cVal = document.getElementById('c-val'), dimVal = document.getElementById('dim-val'), seedVal = document.getElementById('seed-val');
 const scrub = document.getElementById('scrub'), bPlay = document.getElementById('b-play'), bSeed = document.getElementById('b-seed');
 const bShare = document.getElementById('b-share'), bReset = document.getElementById('b-reset'), bCollapse = document.getElementById('b-collapse'), paramsPanel = document.getElementById('params');
+const bSave = document.getElementById('b-save');
 const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rolling
 // ---- action icons (inline SVG) ----
 const _svg = (w, inner, fill) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="${fill || 'none'}" stroke="${fill ? 'none' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
@@ -356,6 +357,7 @@ const ICON_RESET = _svg(16, '<polyline points="23 4 23 10 17 10"/><polyline poin
 const ICON_DICE = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor" stroke="none"/></svg>`;
 const ICON_SHARE = _svg(15, '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/>');
 const ICON_CHECK = _svg(15, '<polyline points="20 6 9 17 4 12"/>');
+const ICON_SAVE = _svg(15, '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>');
 const ICON_EXPAND = _svg(15, '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>');
 const ICON_SHRINK = _svg(15, '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>');
 function setPlay(on) { state.playing = on; bPlay.innerHTML = on ? ICON_PAUSE : ICON_PLAY; bPlay.title = on ? 'pause' : 'play'; }
@@ -388,10 +390,12 @@ const setCollapseIcon = () => { bCollapse.innerHTML = paramsPanel.classList.cont
 bReset.innerHTML = ICON_RESET;
 bSeed.innerHTML = ICON_DICE;
 bShare.innerHTML = ICON_SHARE;
+bSave.innerHTML = ICON_SAVE;
 bPlay.addEventListener('click', () => setPlay(!state.playing));
 bSeed.addEventListener('click', roll);
 bReset.addEventListener('click', resetParams);
 bShare.addEventListener('click', shareLink);
+bSave.addEventListener('click', savePreset);
 bCollapse.addEventListener('click', () => { paramsPanel.classList.toggle('collapsed'); setCollapseIcon(); });
 if (innerWidth <= 720) paramsPanel.classList.add('collapsed');   // mobile: start collapsed
 setPlay(state.playing); setCollapseIcon();
@@ -501,6 +505,17 @@ function shareLink() {
   const url = `${location.origin}/sandbox/${MODE_SLUG[mode]}?c=${encodeConfig()}`;
   const done = () => { bShare.innerHTML = ICON_CHECK; setTimeout(() => { bShare.innerHTML = ICON_SHARE; }, 1400); };
   if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, () => prompt('copy link', url)); else prompt('copy link', url);
+}
+// ---- save presets to localStorage ---------------------------------------
+const SAVE_KEY = 'sandbox.presets';
+function loadSaves() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; } catch { return []; } }
+function savePreset() {
+  const f = activeField(), label = MODE_SLUG[mode] + (f && mode === 'wfc' ? '·' + WFC_STYLES[f.style] : '') + ' · ' + state.seed.toString(16);
+  const saves = loadSaves();
+  saves.push({ label, mode, seed: state.seed, cfg: encodeConfig(), ts: Date.now() });
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(saves)); } catch (e) { /* quota / private mode */ }
+  bSave.innerHTML = ICON_CHECK; bSave.title = 'saved · ' + saves.length + ' preset' + (saves.length === 1 ? '' : 's');
+  setTimeout(() => { bSave.innerHTML = ICON_SAVE; bSave.title = 'save preset to this browser'; }, 1400);
 }
 function applyConfig(b64) {
   let cfg; try { cfg = JSON.parse(atob(b64)); } catch { return; }
