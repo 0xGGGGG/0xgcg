@@ -84,8 +84,13 @@
     .plock { cursor:pointer; margin-right:5px; opacity:.5; font-size:11px; user-select:none; }
     .plock.on { opacity:1; color:var(--acc); }
     /* collapse/expand toggle lives in the action row */
-    #b-collapse { flex:0 0 auto !important; width:34px; }
+    #b-collapse { flex:0 0 auto !important; width:40px; display:inline-flex; align-items:center; justify-content:center; }
+    #b-collapse svg { display:block; }
+    /* collapsed: only the action row remains — hide the params + cycle/seed/share */
     #params.collapsed #params-body { display:none; }
+    #params.collapsed #transport > :not(.row) { display:none; }
+    #params.collapsed #transport { margin-bottom:0; padding-bottom:0; border-bottom:none; }
+    #params.collapsed .row { margin-bottom:0; }
     #ph-name { color:var(--acc); }
     /* mobile: params a scrollable bottom sheet, collapsed to just the action bar by default */
     @media (max-width:720px) {
