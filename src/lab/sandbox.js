@@ -362,13 +362,12 @@ const ICON_SAVE = _svg(15, '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5
 const ICON_EXPAND = _svg(15, '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>');
 const ICON_SHRINK = _svg(15, '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>');
 function setPlay(on) { state.playing = on; bPlay.innerHTML = on ? ICON_PAUSE : ICON_PLAY; bPlay.title = on ? 'pause' : 'play'; }
-function resetParams() {                                 // ⟲ reset: params back to this mode's defaults
+function restartField() {                                // ⟲ retry: fresh run from scratch, keeps all params (new seed)
+  reseed();                                              // new seed, params untouched
   const f = activeField();
-  if (f) {
-    if (mode === 'ltree' && f.presetIndex >= 0) f.setPreset(f.presetIndex);
-    else { if (f._defaults) Object.assign(f.params, f._defaults); if (mode === 'lenia' || mode === 'truchet') f._presetIdx = 0; f.seed(state.seed); if (f.finish) f.finish(); }
-  } else { PARAMS[selLayer] = { lag: selLayer * 0.075, seed: selLayer * 13.0, ...REVEAL_PRESET[LAYERS[selLayer].grow] }; buildFlats(); }
-  renderParams();
+  if (f) { f.seed(state.seed); if (f.finish) f.finish(); }
+  else buildFlats();
+  state.c = 0; scrub.value = 0;                          // replay the reveal/phase from the beginning
 }
 function showSeed() { if (document.activeElement !== seedVal) seedVal.value = state.seed.toString(16).padStart(4, '0'); }
 function reseed() { state.seed = Math.floor(Math.random() * 1e4); showSeed(); }         // new seed number only (loop uses this)
@@ -394,7 +393,7 @@ bShare.innerHTML = ICON_SHARE;
 bSave.innerHTML = ICON_SAVE;
 bPlay.addEventListener('click', () => setPlay(!state.playing));
 bSeed.addEventListener('click', roll);
-bReset.addEventListener('click', resetParams);
+bReset.addEventListener('click', restartField);
 bShare.addEventListener('click', shareLink);
 bSave.addEventListener('click', savePreset);
 savedSel.addEventListener('change', () => { const i = +savedSel.value; if (i >= 0) loadSaved(i); });
