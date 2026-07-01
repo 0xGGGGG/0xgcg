@@ -350,8 +350,16 @@ const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rollin
 function setPlay(on) { state.playing = on; bPlay.textContent = on ? '❚❚ pause' : '▶ play'; }
 function showSeed() { if (document.activeElement !== seedVal) seedVal.value = state.seed.toString(16).padStart(4, '0'); }
 function reseed() { state.seed = Math.floor(Math.random() * 1e4); showSeed(); }         // new seed number only (loop uses this)
-let _liveRS = 0;                                                                         // throttle rebuilds to one per frame
-function liveReseed() { if (_liveRS) return; _liveRS = requestAnimationFrame(() => { _liveRS = 0; const f = activeField(); if (!f) return; f.seed(state.seed); if (f.finish) f.finish(); }); }
+// debounced rebuild for structural modes — leading + trailing, so a drag stays
+// responsive but never rebuilds more than ~1/LIVE_MS (expensive WFC/L-tree solves)
+let _liveTimer = 0, _liveLast = 0; const LIVE_MS = 110;
+function _doRebuild() { _liveLast = performance.now(); const f = activeField(); if (!f) return; f.seed(state.seed); if (f.finish) f.finish(); }
+function liveReseed() {
+  const dt = performance.now() - _liveLast;
+  clearTimeout(_liveTimer);
+  if (dt >= LIVE_MS) _doRebuild();                                    // leading edge: apply at once
+  else _liveTimer = setTimeout(_doRebuild, LIVE_MS - dt);             // trailing edge: settle after the last move
+}
 function roll() {                                                                        // ⚄ roll: randomise UNLOCKED params + new seed
   const f = activeField(), defs = f ? f.defs : PARAM_DEFS, params = f ? f.params : PARAMS[selLayer];
   for (const d of defs) { if (locks[mode + ':' + d.key]) continue; params[d.key] = d.min + Math.random() * (d.max - d.min); }
