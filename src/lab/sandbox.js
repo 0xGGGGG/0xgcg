@@ -443,11 +443,15 @@ function renderParams() {
       ? `<div class="prow-btns"><button id="p-mosh">datamosh: ${golMosh ? 'on' : 'off'}</button></div>` +
         (golMosh ? `<div class="prow"><label>mosh strength <b>${golMoshAmt.toFixed(2)}</b></label><input type="range" id="p-moshamt" min="0" max="2.5" step="0.01" value="${golMoshAmt}"></div>` : '')
       : '';
-    // unified preset picker: built-in presets (top) + saved customs (below)
+    // unified preset picker: built-in presets (top) + saved customs (below).
+    // label reflects the active preset — a loaded custom shows its own name.
     const builtins = builtinsFor(mode), customs = customFor(mode), nb = builtins.length;
-    const ci = curBuiltinIdx(mode, fld);
-    const curLabel = nb ? (mode === 'ltree' && fld.presetIndex < 0 ? 'Custom' : builtins[((ci % nb) + nb) % nb]) : (customs.length ? 'saved presets' : 'presets');
-    const curVal = (nb && ci >= 0) ? 'b' + (((ci % nb) + nb) % nb) : '';
+    const sel = presetSel[mode]; let curLabel = null, curVal = '';
+    if (sel && sel[0] === 'c') { const s = loadSaves()[+sel.slice(1)]; if (s && s.mode === mode) { curLabel = s.name || 'Custom'; curVal = sel; } }
+    if (curLabel == null) {
+      if (nb) { const bi = (sel && sel[0] === 'b') ? +sel.slice(1) : curBuiltinIdx(mode, fld); const k = ((bi % nb) + nb) % nb; curLabel = (mode === 'ltree' && fld.presetIndex < 0) ? 'Custom' : builtins[k]; curVal = 'b' + k; }
+      else curLabel = customs.length ? 'saved presets' : 'presets';
+    }
     const presetRow = (nb || customs.length) ? presetPickerHTML(builtins, customs, curLabel, curVal) : '';
     const ltCustom = mode === 'ltree'
       ? `<div class="prow"><label>axiom</label><input id="lt-ax" type="text" value="${esc(fld.lsys.axiom)}" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit"></div>` +
@@ -517,11 +521,53 @@ function savePreset() {
 function loadSaved(gi) {
   const s = loadSaves()[gi]; if (!s) return;
   applyConfig(s.cfg);                                    // sets mode + params + seed, reseeds the field
+  presetSel[s.mode] = 'c' + gi;                          // button shows this custom's name
   try { history.replaceState(null, '', '/sandbox/' + MODE_SLUG[mode]); } catch {}
   renderParams(); showSeed();
 }
 function deleteSaved(gi) { const saves = loadSaves(); if (gi < 0 || gi >= saves.length) return; saves.splice(gi, 1); writeSaves(saves); }
 function renameSaved(gi, name) { const saves = loadSaves(); if (saves[gi]) { saves[gi].name = name; writeSaves(saves); } }
+
+// generic param-bundle presets for scenes without their own preset lists.
+// First entry of each == the field's default, so the label matches on load.
+const SCENE_PRESETS = {
+  smoothlife: [
+    { name: 'Gliders', params: { b1: 0.257, b2: 0.336, d1: 0.330, d2: 0.549, dt: 0.30 } },
+    { name: 'Mitosis', params: { b1: 0.250, b2: 0.350, d1: 0.200, d2: 0.500, dt: 0.20 } },
+    { name: 'Coral', params: { b1: 0.300, b2: 0.450, d1: 0.400, d2: 0.600, dt: 0.35 } },
+    { name: 'Amoeba', params: { b1: 0.200, b2: 0.300, d1: 0.280, d2: 0.520, dt: 0.25 } },
+    { name: 'Waves', params: { b1: 0.180, b2: 0.280, d1: 0.360, d2: 0.620, dt: 0.45 } },
+  ],
+  grayscott: [
+    { name: 'Spots', params: { f: 0.017, k: 0.051, Du: 0.921, Dv: 0.301, dt: 0.45 } },
+    { name: 'Coral', params: { f: 0.0545, k: 0.062, Du: 0.921, Dv: 0.301, dt: 0.45 } },
+    { name: 'Maze', params: { f: 0.029, k: 0.057, Du: 0.921, Dv: 0.301, dt: 0.45 } },
+    { name: 'Worms', params: { f: 0.014, k: 0.054, Du: 0.921, Dv: 0.301, dt: 0.45 } },
+    { name: 'Waves', params: { f: 0.014, k: 0.045, Du: 1.10, Dv: 0.40, dt: 0.55 } },
+  ],
+  voronoi: [
+    { name: 'Cells', params: { scale: 9.175, jitter: 0.590, edge: 0.010, speed: 1.275, contrast: 1.940 } },
+    { name: 'Shards', params: { scale: 6.0, jitter: 1.0, edge: 0.020, speed: 0.5, contrast: 2.2 } },
+    { name: 'Honeycomb', params: { scale: 12.0, jitter: 0.10, edge: 0.045, speed: 0.0, contrast: 1.5 } },
+    { name: 'Flow', params: { scale: 8.0, jitter: 0.70, edge: 0.015, speed: 3.0, contrast: 1.2 } },
+    { name: 'Crystals', params: { scale: 14.0, jitter: 0.40, edge: 0.090, speed: 0.3, contrast: 2.5 } },
+  ],
+  gameoflife: [
+    { name: 'Conway', params: { sLo: 1.64, sHi: 3, bLo: 3, bHi: 3 } },
+    { name: 'Maze', params: { sLo: 1, sHi: 5, bLo: 3, bHi: 3 } },
+    { name: 'Coral', params: { sLo: 4, sHi: 8, bLo: 3, bHi: 3 } },
+    { name: 'Walled City', params: { sLo: 2, sHi: 5, bLo: 4, bHi: 8 } },
+    { name: 'Assimilation', params: { sLo: 4, sHi: 7, bLo: 3, bHi: 5 } },
+  ],
+  epicycles: [
+    { name: 'Double Pendulum', params: { shape: 5, circles: 48, speed: 1.0, scale: 0.85, trail: 1.0, tiles: 1 } },
+    { name: 'Triple Pendulum', params: { shape: 6, circles: 48, speed: 1.0, scale: 0.8, trail: 1.0, tiles: 1 } },
+    { name: 'Harmonograph', params: { shape: 4, circles: 48, speed: 0.7, scale: 0.85, trail: 1.4, tiles: 1 } },
+    { name: 'Fourier', params: { shape: 1, circles: 64, speed: 1.0, scale: 0.85, trail: 1.0, tiles: 1 } },
+    { name: 'Pendulum Grid', params: { shape: 5, circles: 40, speed: 1.0, scale: 0.9, trail: 1.0, tiles: 4 } },
+  ],
+};
+const presetSel = {};   // mode → 'b<i>' (built-in) or 'c<gi>' (custom), for the button label
 
 // ---- built-in presets per scene (names only; apply routed through applyBuiltin)
 function builtinsFor(m) {
@@ -530,21 +576,23 @@ function builtinsFor(m) {
   if (m === 'truchet') return TRUCHET_PRESETS.map((p) => p.name);
   if (m === 'physarum') return PHYSARUM_PRESETS.map((p) => p.name);
   if (m === 'ltree') return LTREE_PRESETS.map((p) => p.name);
+  if (SCENE_PRESETS[m]) return SCENE_PRESETS[m].map((p) => p.name);
   return [];
 }
 function curBuiltinIdx(m, f) {
   if (m === 'wfc') return f.style;
-  if (m === 'lenia' || m === 'truchet' || m === 'physarum') return f._presetIdx || 0;
   if (m === 'ltree') return f.presetIndex >= 0 ? f.presetIndex : -1;
-  return -1;
+  return f._presetIdx || 0;                              // lenia/truchet/physarum + SCENE_PRESETS scenes
 }
 function applyBuiltin(m, f, i) {
   const n = builtinsFor(m).length; if (!n) return; const k = ((i % n) + n) % n;
+  presetSel[m] = 'b' + k;
   if (m === 'wfc') { f.setStyle(k); renderParams(); }
   else if (m === 'lenia') applyLenia(k);
   else if (m === 'truchet') applyTruchet(k);
   else if (m === 'physarum') applyPhysarum(k);
   else if (m === 'ltree') { f.setPreset(k); renderParams(); }
+  else if (SCENE_PRESETS[m]) { f._presetIdx = k; Object.assign(f.params, SCENE_PRESETS[m][k].params); f.seed(state.seed); if (f.finish) f.finish(); renderParams(); }
 }
 // unified preset picker: built-ins (top) + saved customs (below), one split control
 let _customCyc = 0;
