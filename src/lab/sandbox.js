@@ -385,8 +385,8 @@ function roll() {                                                               
   reseed(); if (f) f.seed(state.seed); else buildFlats(); renderParams();
 }
 const setCollapseIcon = () => { bCollapse.innerHTML = paramsPanel.classList.contains('collapsed') ? ICON_EXPAND : ICON_SHRINK; };
-bReset.innerHTML = ICON_RESET + '<span>reset</span>';
-bSeed.innerHTML = ICON_DICE + '<span>roll</span>';
+bReset.innerHTML = ICON_RESET;
+bSeed.innerHTML = ICON_DICE;
 bShare.innerHTML = ICON_SHARE;
 bPlay.addEventListener('click', () => setPlay(!state.playing));
 bSeed.addEventListener('click', roll);

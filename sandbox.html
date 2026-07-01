@@ -67,18 +67,17 @@
     /* transport merged into the params panel */
     #transport { padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,.1); }
     #transport .row { display:flex; gap:6px; margin-bottom:8px; }
-    #transport button { flex:1; padding:7px 4px; cursor:pointer; color:var(--fg);
-      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14); border-radius:5px; font:inherit; letter-spacing:.04em;
-      display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+    #transport .row button { flex:1; min-width:0; aspect-ratio:1; padding:0; cursor:pointer; color:var(--fg);
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14); border-radius:6px; font:inherit;
+      display:inline-flex; align-items:center; justify-content:center; }
     #transport button svg { display:block; flex:0 0 auto; }
-    #transport button:hover { border-color:var(--acc); color:#fff; }
+    #transport .row button:hover { border-color:var(--acc); color:#fff; background:rgba(255,255,255,.07); }
     #transport label { display:block; color:var(--dim); margin:6px 0 2px; letter-spacing:.05em; }
     #transport input[type=range] { width:100%; accent-color:var(--acc); }
     #transport .seedrow { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
     #seed-val { width:56px; font:inherit; color:#fff; background:rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.16); border-radius:4px; padding:2px 5px; letter-spacing:.05em; }
     #seed-val:focus { outline:none; border-color:var(--acc); }
-    #b-share, #b-collapse { flex:0 0 auto !important; width:38px; }
     #b-share { color:var(--acc); }
     /* per-param lock */
     #params-body .prow label { align-items:center; }
