@@ -14,6 +14,7 @@ export const LTREE_PRESETS = [
   { name: 'Seaweed',    axiom: 'F', rules: 'F=F[+F]F[-F][F]',                      angle: 20,  iter: 4, sym: 1 },
   { name: 'Sticks',     axiom: 'X', rules: 'X=F[+X]F[-X]+X\nF=FF',                angle: 20,  iter: 5, sym: 1 },
   { name: 'Bracket',    axiom: 'F', rules: 'F=FF-[-F+F+F]+[+F-F-F]',              angle: 22,  iter: 4, sym: 1 },
+  { name: 'Frost',      axiom: 'F', rules: 'F=FF-[-F+F+F]+[+F-F-F]',              angle: 22,  iter: 3.22, sym: 1.68, jitter: 0.148, thick: 0.5 },
   { name: 'Koch',       axiom: 'F', rules: 'F=F+F-F-F+F',                          angle: 90,  iter: 3, sym: 1 },
   { name: 'Koch Island',axiom: 'F+F+F+F', rules: 'F=F+F-F-FF+F+F-F',              angle: 90,  iter: 2, sym: 1 },
   { name: 'Dragon',     axiom: 'FX',rules: 'X=X+YF+\nY=-FX-Y',                     angle: 90,  iter: 11, sym: 1 },
@@ -63,6 +64,7 @@ export class LTree {
     const P = LTREE_PRESETS[this.presetIndex];
     this.lsys = { axiom: P.axiom, rules: P.rules, draw: P.draw || 'FG' };
     this.params.angle = P.angle; this.params.iter = P.iter; this.params.sym = P.sym;
+    this.params.jitter = P.jitter != null ? P.jitter : 0; this.params.thick = P.thick != null ? P.thick : 2.6;
     this.seed(1);
   }
   applyCustom(axiom, rules, draw) { this.lsys = { axiom: axiom || 'F', rules: rules || 'F=FF', draw: draw || 'FG' }; this.presetIndex = -1; this.seed(1); }
