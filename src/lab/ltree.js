@@ -19,6 +19,7 @@ export const LTREE_PRESETS = [
   { name: 'Vessel',     axiom: 'F', rules: 'F=F[+F]F[-F]F',                        angle: 90.1, iter: 3.79, sym: 2.56, jitter: 0.25, thick: 0.725 },
   { name: 'Fan',        axiom: 'X', rules: 'X=F+[[X]-X]-F[-FX]+X+\nF=FF',          angle: 44.1, iter: 4.84, sym: 1.76, jitter: 0, thick: 1.153 },
   { name: 'Weave',      axiom: 'A', rules: 'A=+B-A-B+\nB=-A+B+A-',                 angle: 30.3, iter: 4.48, sym: 1.64, jitter: 0.104, thick: 0.68, draw: 'AB' },
+  { name: 'Starburst',  axiom: 'F', rules: 'F=F[+F]F[-F]F',                        angle: 81.78, iter: 1.71, sym: 8.8, jitter: 0.184, thick: 0.77 },
   { name: 'Koch',       axiom: 'F', rules: 'F=F+F-F-F+F',                          angle: 90,  iter: 3, sym: 1 },
   { name: 'Koch Island',axiom: 'F+F+F+F', rules: 'F=F+F-F-FF+F+F-F',              angle: 90,  iter: 2, sym: 1 },
   { name: 'Dragon',     axiom: 'FX',rules: 'X=X+YF+\nY=-FX-Y',                     angle: 90,  iter: 11, sym: 1 },
