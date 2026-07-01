@@ -348,7 +348,7 @@ const cVal = document.getElementById('c-val'), dimVal = document.getElementById(
 const scrub = document.getElementById('scrub'), bPlay = document.getElementById('b-play'), bSeed = document.getElementById('b-seed');
 const bShare = document.getElementById('b-share'), bReset = document.getElementById('b-reset'), bCollapse = document.getElementById('b-collapse'), paramsPanel = document.getElementById('params');
 const bSave = document.getElementById('b-save');
-const savedRow = document.getElementById('saved-row'), savedSel = document.getElementById('saved-sel'), bDel = document.getElementById('b-del');
+const manageLink = document.getElementById('manage-link');
 const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rolling
 // ---- action icons (inline SVG) ----
 const _svg = (w, inner, fill) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="${fill || 'none'}" stroke="${fill ? 'none' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
@@ -396,9 +396,9 @@ bSeed.addEventListener('click', roll);
 bReset.addEventListener('click', restartField);
 bShare.addEventListener('click', shareLink);
 bSave.addEventListener('click', savePreset);
-savedSel.addEventListener('change', () => { const i = +savedSel.value; if (i >= 0) loadSaved(i); });
-bDel.addEventListener('click', () => { const i = +savedSel.value; if (i >= 0) deleteSaved(i); });
-refreshSaved();
+manageLink.addEventListener('click', openModal);
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('preset-modal').addEventListener('click', (e) => { if (e.target.id === 'preset-modal') closeModal(); });
 bCollapse.addEventListener('click', () => { paramsPanel.classList.toggle('collapsed'); setCollapseIcon(); });
 if (innerWidth <= 720) paramsPanel.classList.add('collapsed');   // mobile: start collapsed
 setPlay(state.playing); setCollapseIcon();
@@ -443,13 +443,12 @@ function renderParams() {
       ? `<div class="prow-btns"><button id="p-mosh">datamosh: ${golMosh ? 'on' : 'off'}</button></div>` +
         (golMosh ? `<div class="prow"><label>mosh strength <b>${golMoshAmt.toFixed(2)}</b></label><input type="range" id="p-moshamt" min="0" max="2.5" step="0.01" value="${golMoshAmt}"></div>` : '')
       : '';
-    // type-specific preset picker (shown right under the type selector)
-    const ltPreset = mode === 'ltree' ? pickerHTML('p-preset', 'preset', fld.presetIndex >= 0 ? LTREE_PRESETS[fld.presetIndex].name : 'Custom', LTREE_PRESETS.map((p, i) => ({ v: i, label: p.name })), fld.presetIndex) : '';
-    const wfcExtra = mode === 'wfc' ? pickerHTML('p-style', 'preset', WFC_STYLES[fld.style], WFC_STYLES.map((s, i) => ({ v: i, label: s })), fld.style) : '';
-    const leniaExtra = mode === 'lenia' ? pickerHTML('p-lpreset', 'preset', LENIA_PRESETS[fld._presetIdx || 0].name, LENIA_PRESETS.map((p, i) => ({ v: i, label: p.name })), fld._presetIdx || 0) : '';
-    const truchetExtra = mode === 'truchet' ? pickerHTML('p-tpreset', 'preset', TRUCHET_PRESETS[fld._presetIdx || 0].name, TRUCHET_PRESETS.map((p, i) => ({ v: i, label: p.name })), fld._presetIdx || 0) : '';
-    const physExtra = mode === 'physarum' ? pickerHTML('p-ppreset', 'preset', PHYSARUM_PRESETS[fld._presetIdx || 0].name, PHYSARUM_PRESETS.map((p, i) => ({ v: i, label: p.name })), fld._presetIdx || 0) : '';
-    const presetRow = leniaExtra + truchetExtra + physExtra + wfcExtra + ltPreset;
+    // unified preset picker: built-in presets (top) + saved customs (below)
+    const builtins = builtinsFor(mode), customs = customFor(mode), nb = builtins.length;
+    const ci = curBuiltinIdx(mode, fld);
+    const curLabel = nb ? (mode === 'ltree' && fld.presetIndex < 0 ? 'Custom' : builtins[((ci % nb) + nb) % nb]) : (customs.length ? 'saved presets' : 'presets');
+    const curVal = (nb && ci >= 0) ? 'b' + (((ci % nb) + nb) % nb) : '';
+    const presetRow = (nb || customs.length) ? presetPickerHTML(builtins, customs, curLabel, curVal) : '';
     const ltCustom = mode === 'ltree'
       ? `<div class="prow"><label>axiom</label><input id="lt-ax" type="text" value="${esc(fld.lsys.axiom)}" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit"></div>` +
         `<div class="prow"><label>rules · one per line (F=FF+[+F-F])</label><textarea id="lt-rules" rows="3" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit;resize:vertical">${esc(fld.lsys.rules)}</textarea></div>` +
@@ -471,14 +470,8 @@ function renderParams() {
       paramsEl.querySelector('#p-mosh').addEventListener('click', () => { golMosh = !golMosh; renderParams(); });
       const ms = paramsEl.querySelector('#p-moshamt'); if (ms) ms.addEventListener('input', () => { golMoshAmt = +ms.value; });
     }
-    if (mode === 'ltree') {
-      wirePicker('p-preset', () => { fld.setPreset((fld.presetIndex < 0 ? 0 : fld.presetIndex) + 1); renderParams(); }, (v) => { fld.setPreset(+v); renderParams(); });
-      paramsEl.querySelector('#lt-apply').addEventListener('click', () => { fld.applyCustom(document.getElementById('lt-ax').value, document.getElementById('lt-rules').value); renderParams(); });
-    }
-    if (mode === 'wfc') wirePicker('p-style', () => { fld.setStyle(fld.style + 1); renderParams(); }, (v) => { fld.setStyle(+v); renderParams(); });
-    if (mode === 'lenia') wirePicker('p-lpreset', () => applyLenia((fld._presetIdx || 0) + 1), (v) => applyLenia(+v));
-    if (mode === 'truchet') wirePicker('p-tpreset', () => applyTruchet((fld._presetIdx || 0) + 1), (v) => applyTruchet(+v));
-    if (mode === 'physarum') wirePicker('p-ppreset', () => applyPhysarum((fld._presetIdx || 0) + 1), (v) => applyPhysarum(+v));
+    if (nb || customs.length) wirePresetPicker(mode, fld, builtins, customs);
+    if (mode === 'ltree') paramsEl.querySelector('#lt-apply').addEventListener('click', () => { fld.applyCustom(document.getElementById('lt-ax').value, document.getElementById('lt-rules').value); renderParams(); });
   } else {
     const L = LAYERS[selLayer], p = PARAMS[selLayer];
     const layerSel = pickerHTML('p-layer', '', `${String(selLayer).padStart(2, '0')} · ${L.name}`, LAYERS.map((l, i) => ({ v: i, label: `${String(i).padStart(2, '0')} · ${l.name}` })), selLayer);
@@ -513,34 +506,76 @@ function shareLink() {
 const SAVE_KEY = 'sandbox.presets';
 function loadSaves() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; } catch { return []; } }
 function writeSaves(saves) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(saves)); } catch (e) { /* quota / private mode */ } }
+function customFor(m) { return loadSaves().map((s, i) => ({ ...s, gi: i })).filter((s) => s.mode === m); }
 function savePreset() {
-  const f = activeField();
-  const detail = (f && mode === 'wfc') ? WFC_STYLES[f.style] + ' · ' : '';   // type shown by the group header
-  const label = detail + state.seed.toString(16);
-  const saves = loadSaves();
-  saves.push({ label, mode, seed: state.seed, cfg: encodeConfig(), ts: Date.now() });
-  writeSaves(saves); refreshSaved(saves.length - 1);
-  bSave.innerHTML = ICON_CHECK; bSave.title = 'saved · ' + saves.length + ' preset' + (saves.length === 1 ? '' : 's');
-  setTimeout(() => { bSave.innerHTML = ICON_SAVE; bSave.title = 'save preset to this browser'; }, 1400);
+  const saves = loadSaves(), n = saves.filter((s) => s.mode === mode).length + 1;
+  saves.push({ name: 'Custom ' + n, mode, seed: state.seed, cfg: encodeConfig(), ts: Date.now() });
+  writeSaves(saves);
+  bSave.innerHTML = ICON_CHECK; setTimeout(() => { bSave.innerHTML = ICON_SAVE; }, 1400);
+  renderParams();                                        // new custom appears in the unified preset dropdown
 }
-// populate the loader dropdown, grouped by type (current mode first)
-function refreshSaved(sel = -1) {
-  const saves = loadSaves();
-  savedRow.classList.toggle('empty', saves.length === 0);
-  const groups = {}; saves.forEach((s, i) => { const m = s.mode || '?'; (groups[m] = groups[m] || []).push({ s, i }); });
-  const order = Object.keys(groups).sort((a, b) => (a === mode ? -1 : b === mode ? 1 : a.localeCompare(b)));
-  const esc = (t) => String(t).replace(/</g, '');
-  let html = `<option value="-1">load saved…</option>`;
-  for (const m of order) html += `<optgroup label="${esc(FIELD_LABEL[m] || m)}">` + groups[m].map(({ s, i }) => `<option value="${i}">${esc(s.label || m)}</option>`).join('') + `</optgroup>`;
-  savedSel.innerHTML = html; savedSel.value = String(sel);
-}
-function loadSaved(i) {
-  const s = loadSaves()[i]; if (!s) return;
-  applyConfig(s.cfg);                                   // sets mode + params + seed, reseeds the field
+function loadSaved(gi) {
+  const s = loadSaves()[gi]; if (!s) return;
+  applyConfig(s.cfg);                                    // sets mode + params + seed, reseeds the field
   try { history.replaceState(null, '', '/sandbox/' + MODE_SLUG[mode]); } catch {}
   renderParams(); showSeed();
 }
-function deleteSaved(i) { const saves = loadSaves(); if (i < 0 || i >= saves.length) return; saves.splice(i, 1); writeSaves(saves); refreshSaved(); }
+function deleteSaved(gi) { const saves = loadSaves(); if (gi < 0 || gi >= saves.length) return; saves.splice(gi, 1); writeSaves(saves); }
+function renameSaved(gi, name) { const saves = loadSaves(); if (saves[gi]) { saves[gi].name = name; writeSaves(saves); } }
+
+// ---- built-in presets per scene (names only; apply routed through applyBuiltin)
+function builtinsFor(m) {
+  if (m === 'wfc') return WFC_STYLES.slice();
+  if (m === 'lenia') return LENIA_PRESETS.map((p) => p.name);
+  if (m === 'truchet') return TRUCHET_PRESETS.map((p) => p.name);
+  if (m === 'physarum') return PHYSARUM_PRESETS.map((p) => p.name);
+  if (m === 'ltree') return LTREE_PRESETS.map((p) => p.name);
+  return [];
+}
+function curBuiltinIdx(m, f) {
+  if (m === 'wfc') return f.style;
+  if (m === 'lenia' || m === 'truchet' || m === 'physarum') return f._presetIdx || 0;
+  if (m === 'ltree') return f.presetIndex >= 0 ? f.presetIndex : -1;
+  return -1;
+}
+function applyBuiltin(m, f, i) {
+  const n = builtinsFor(m).length; if (!n) return; const k = ((i % n) + n) % n;
+  if (m === 'wfc') { f.setStyle(k); renderParams(); }
+  else if (m === 'lenia') applyLenia(k);
+  else if (m === 'truchet') applyTruchet(k);
+  else if (m === 'physarum') applyPhysarum(k);
+  else if (m === 'ltree') { f.setPreset(k); renderParams(); }
+}
+// unified preset picker: built-ins (top) + saved customs (below), one split control
+let _customCyc = 0;
+function presetPickerHTML(builtins, customs, curLabel, curVal) {
+  const b = builtins.length ? `<optgroup label="presets">${builtins.map((nm, i) => `<option value="b${i}"${'b' + i === curVal ? ' selected' : ''}>${esc(nm)}</option>`).join('')}</optgroup>` : '';
+  const c = customs.length ? `<optgroup label="saved">${customs.map((s) => `<option value="c${s.gi}">${esc(s.name || 'Custom')}</option>`).join('')}</optgroup>` : '';
+  return `<div class="picker preset" style="margin-bottom:10px"><button id="p-preset-main" class="pick-main" type="button" title="click to cycle · caret for full list">${esc(curLabel)}</button><span class="pick-caret">${CARET}</span><select id="p-preset-sel" class="pick-sel" aria-label="choose preset">${b}${c}</select></div>`;
+}
+function wirePresetPicker(m, f, builtins, customs) {
+  const main = paramsEl.querySelector('#p-preset-main'), sel = paramsEl.querySelector('#p-preset-sel');
+  if (main) main.addEventListener('click', () => {
+    if (builtins.length) applyBuiltin(m, f, curBuiltinIdx(m, f) + 1);
+    else if (customs.length) { _customCyc = (_customCyc + 1) % customs.length; loadSaved(customs[_customCyc].gi); }
+  });
+  if (sel) sel.addEventListener('change', () => { const v = sel.value; if (v[0] === 'b') applyBuiltin(m, f, +v.slice(1)); else if (v[0] === 'c') loadSaved(+v.slice(1)); });
+}
+
+// ---- preset manager modal ---------------------------------------------------
+function openModal() { buildModal(); document.getElementById('preset-modal').classList.remove('hidden'); }
+function closeModal() { document.getElementById('preset-modal').classList.add('hidden'); }
+function buildModal() {
+  const saves = loadSaves(), body = document.getElementById('modal-body');
+  if (!saves.length) { body.innerHTML = `<div class="modal-empty">No saved presets yet — tune a scene and hit the 💾 save icon.</div>`; return; }
+  const groups = {}; saves.forEach((s, i) => { const mm = s.mode || '?'; (groups[mm] = groups[mm] || []).push({ s, i }); });
+  const order = Object.keys(groups).sort((a, b) => (a === mode ? -1 : b === mode ? 1 : a.localeCompare(b)));
+  body.innerHTML = order.map((mm) => `<div class="modal-group"><div class="modal-gtitle">${esc(FIELD_LABEL[mm] || mm)}</div>` +
+    groups[mm].map(({ s, i }) => `<div class="modal-row"><input class="mp-name" data-i="${i}" value="${esc(s.name || '')}" placeholder="Custom"/><button class="mp-load" data-i="${i}">load</button><button class="mp-del" data-i="${i}">✕</button></div>`).join('') + `</div>`).join('');
+  body.querySelectorAll('.mp-name').forEach((inp) => inp.addEventListener('change', () => renameSaved(+inp.dataset.i, inp.value)));
+  body.querySelectorAll('.mp-load').forEach((btn) => btn.addEventListener('click', () => { closeModal(); loadSaved(+btn.dataset.i); }));
+  body.querySelectorAll('.mp-del').forEach((btn) => btn.addEventListener('click', () => { deleteSaved(+btn.dataset.i); buildModal(); renderParams(); }));
+}
 function applyConfig(b64) {
   let cfg; try { cfg = JSON.parse(atob(b64)); } catch { return; }
   if (!cfg || !MODES.includes(cfg.m)) return;
