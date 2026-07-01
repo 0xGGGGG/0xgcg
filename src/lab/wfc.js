@@ -85,14 +85,18 @@ export class WFC {
   async _render() {
     const token = ++this._token;
     const theme = THEMES[THEME_KEYS[this.style]];
-    // re-rasterise tiles only when style / visual params changed (not on reseed / grid)
+    // re-rasterise tiles only when style / visual params changed (not on reseed / grid).
+    // Commit the cache key ONLY after the async load succeeds and this render is
+    // still the latest — otherwise a superseded render could mark the key "done"
+    // and a follow-up call (sandbox fires seed()+finish()) would draw stale tiles.
     const key = this._key();
-    if (this._tileKey !== key || !this._imgs) {
-      this._tileKey = key;
+    let imgs = this._imgs;
+    if (this._tileKey !== key || !imgs) {
       const opts = this._tileOpts();
-      const imgs = await Promise.all(this.pool.map((t) => loadImg(svgURL(decorateSvg(t, theme, opts)))));
+      const rendered = await Promise.all(this.pool.map((t) => loadImg(svgURL(decorateSvg(t, theme, opts)))));
       if (token !== this._token) return;
-      this._imgs = imgs;
+      this._imgs = imgs = rendered;
+      this._tileKey = key;
     }
     // solve (retry a few seeds on contradiction) + composite
     const G = Math.max(2, Math.round(this.params.grid));
