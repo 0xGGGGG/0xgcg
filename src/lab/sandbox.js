@@ -350,14 +350,13 @@ const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rollin
 function setPlay(on) { state.playing = on; bPlay.textContent = on ? '❚❚ pause' : '▶ play'; }
 function showSeed() { if (document.activeElement !== seedVal) seedVal.value = state.seed.toString(16).padStart(4, '0'); }
 function reseed() { state.seed = Math.floor(Math.random() * 1e4); showSeed(); }         // new seed number only (loop uses this)
-function seedNow() { reseed(); const f = activeField(); if (f) f.seed(state.seed); }     // ⟳ seed button: also re-roll the field
-function roll() {                                                                        // randomise UNLOCKED params + new seed
+function roll() {                                                                        // ⚄ roll: randomise UNLOCKED params + new seed
   const f = activeField(), defs = f ? f.defs : PARAM_DEFS, params = f ? f.params : PARAMS[selLayer];
   for (const d of defs) { if (locks[mode + ':' + d.key]) continue; params[d.key] = d.min + Math.random() * (d.max - d.min); }
   reseed(); if (f) f.seed(state.seed); else buildFlats(); renderParams();
 }
 bPlay.addEventListener('click', () => setPlay(!state.playing));
-bSeed.addEventListener('click', seedNow);
+bSeed.addEventListener('click', roll);
 bShare.addEventListener('click', shareLink);
 uiToggle.addEventListener('click', () => document.body.classList.toggle('panels-hidden'));
 if (innerWidth <= 720) document.body.classList.add('panels-hidden');   // mobile: start collapsed
@@ -401,14 +400,13 @@ function renderParams() {
         `<div class="prow-btns"><button id="lt-apply">apply custom</button></div>`
       : '';
     paramsEl.innerHTML = modeBtn + presetRow + `<div class="psub" style="margin-top:2px">${mode === 'grayscott' ? 'reaction–diffusion' : mode === 'truchet' ? 'tiling' : mode === 'ltree' ? 'L-system' : mode === 'wfc' ? 'wave function collapse' : mode === 'epicycles' ? 'fourier · pendulums' : mode === 'physarum' ? 'agent slime mold' : 'continuous CA · living field'}</div>` +
-      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltCustom + `<div class="prow-btns"><button id="p-roll">⚄ roll</button></div>`;
+      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltCustom;
     wireLocks();
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => {
       inp.addEventListener('input', () => { if (inp.dataset.k) pr[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(inp.dataset.k ? 3 : 2); });
       if (mode === 'ltree' && inp.dataset.k) inp.addEventListener('change', () => fld.seed(state.seed));   // regenerate on release
       if (mode === 'epicycles' && (inp.dataset.k === 'shape' || inp.dataset.k === 'tiles')) inp.addEventListener('change', () => fld.seed(state.seed));
     });
-    paramsEl.querySelector('#p-roll').addEventListener('click', roll);
     if (mode === 'gameoflife') {
       paramsEl.querySelector('#p-mosh').addEventListener('click', () => { golMosh = !golMosh; renderParams(); });
       const ms = paramsEl.querySelector('#p-moshamt'); if (ms) ms.addEventListener('input', () => { golMoshAmt = +ms.value; });
@@ -431,9 +429,8 @@ function renderParams() {
   } else {
     const L = LAYERS[selLayer], p = PARAMS[selLayer];
     paramsEl.innerHTML = modeBtn + `<h2>${String(selLayer).padStart(2, '0')} · ${L.name}</h2><div class="psub">growth: ${L.grow} · click a layer · drag to tune</div>` +
-      PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-roll">⚄ roll</button><button id="p-reset">reset</button><button id="p-export">export</button></div>`;
+      PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-reset">reset</button><button id="p-export">export</button></div>`;
     wireLocks();
-    paramsEl.querySelector('#p-roll').addEventListener('click', roll);
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => inp.addEventListener('input', () => { p[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(3); buildFlats(); }));
     paramsEl.querySelector('#p-reset').addEventListener('click', () => { PARAMS[selLayer] = { lag: selLayer * 0.075, seed: selLayer * 13.0, ...REVEAL_PRESET[L.grow] }; buildFlats(); renderParams(); });
     paramsEl.querySelector('#p-export').addEventListener('click', () => { const j = JSON.stringify(PARAMS, null, 2); if (navigator.clipboard) navigator.clipboard.writeText(j).catch(() => {}); console.log('bloom params (copied):\n' + j); });
