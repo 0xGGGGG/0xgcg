@@ -64,6 +64,21 @@
     .mode-select:hover { border-color:rgba(39,224,160,.75); background-color:rgba(39,224,160,.16); }
     .mode-select:focus { outline:none; border-color:var(--acc); box-shadow:0 0 12px rgba(39,224,160,.3); }
     .mode-select option { background:#0a1310; color:#cfe0d8; font-size:13px; letter-spacing:normal; text-transform:none; }
+    /* split picker: click the label to cycle, click the caret to open the list */
+    .picker { position:relative; display:flex; align-items:stretch; width:100%; border-radius:7px; overflow:hidden;
+      border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.05); }
+    .picker.type { border-color:rgba(39,224,160,.4); background:rgba(39,224,160,.08); }
+    .pick-main { flex:1; min-width:0; font:inherit; color:#fff; background:none; border:none; cursor:pointer;
+      padding:9px 10px; letter-spacing:.06em; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .picker.type .pick-main { font-size:15px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; }
+    .pick-main:hover { background:rgba(255,255,255,.06); }
+    .picker.type .pick-main:hover { background:rgba(39,224,160,.12); }
+    .pick-caret { flex:0 0 auto; width:34px; display:inline-flex; align-items:center; justify-content:center;
+      color:var(--acc); border-left:1px solid rgba(255,255,255,.14); pointer-events:none; }
+    .picker.type .pick-caret { border-left-color:rgba(39,224,160,.3); }
+    .picker:hover .pick-caret { color:#fff; }
+    .pick-sel { position:absolute; right:0; top:0; width:34px; height:100%; opacity:0; cursor:pointer; z-index:2; border:0; }
+    .pick-sel option { background:#0a1310; color:#cfe0d8; font-size:13px; letter-spacing:normal; text-transform:none; }
     /* transport merged into the params panel */
     #transport { padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,.1); }
     #transport .row { display:flex; gap:6px; margin-bottom:8px; }

@@ -414,8 +414,21 @@ let selLayer = 3;
 const slider = (d, p) => { const v = p[d.key], step = (d.max - d.min) / 200, lk = locks[mode + ':' + d.key]; return `<div class="prow"><label><span class="plock${lk ? ' on' : ''}" data-lock="${d.key}" title="lock — keep on roll">${lk ? '🔒' : '🔓'}</span>${d.label} <b>${(+v).toFixed(3)}</b></label><input type="range" data-k="${d.key}" min="${d.min}" max="${d.max}" step="${step}" value="${v}"></div>`; };
 function wireLocks() { paramsEl.querySelectorAll('.plock').forEach((el) => el.addEventListener('click', () => { const k = mode + ':' + el.dataset.lock; locks[k] = !locks[k]; el.classList.toggle('on', locks[k]); el.textContent = locks[k] ? '🔒' : '🔓'; })); }
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// split picker: label (cycles) + caret (opens the native list)
+const CARET = _svg(13, '<polyline points="6 9 12 15 18 9"/>');
+function pickerHTML(id, cls, curLabel, opts, curVal) {
+  return `<div class="picker ${cls}" style="margin-bottom:10px"><button id="${id}-main" class="pick-main" type="button" title="click to cycle · caret for full list">${curLabel}</button><span class="pick-caret">${CARET}</span><select id="${id}-sel" class="pick-sel" aria-label="choose">${opts.map((o) => `<option value="${o.v}"${String(o.v) === String(curVal) ? ' selected' : ''}>${o.label}</option>`).join('')}</select></div>`;
+}
+function wirePicker(id, onCycle, onPick) {
+  const m = paramsEl.querySelector('#' + id + '-main'), s = paramsEl.querySelector('#' + id + '-sel');
+  if (m) m.addEventListener('click', onCycle);
+  if (s) s.addEventListener('change', () => onPick(s.value));
+}
+function applyLenia(i) { const n = LENIA_PRESETS.length, k = ((i % n) + n) % n, P = LENIA_PRESETS[k], f = fields.lenia; f._presetIdx = k; f.params.mu = P.mu; f.params.sigma = P.sigma; f.params.dt = P.dt; f.params.muK = P.muK; f.params.sigK = P.sigK; f.seed0 = P.seed; f.seed(P.seed); renderParams(); }
+function applyTruchet(i) { const n = TRUCHET_PRESETS.length, k = ((i % n) + n) % n, P = TRUCHET_PRESETS[k], f = fields.truchet; f._presetIdx = k; f.params.scale = P.scale; f.params.width = P.width; f.params.curve = P.curve; f.params.speed = P.speed; f.params.contrast = P.contrast; renderParams(); }
+function applyPhysarum(i) { const n = PHYSARUM_PRESETS.length, k = ((i % n) + n) % n, P = PHYSARUM_PRESETS[k], f = fields.physarum; f._presetIdx = k; f.params.sensorAngle = P.sensorAngle; f.params.sensorDist = P.sensorDist; f.params.turn = P.turn; f.params.step = P.step; f.params.decay = P.decay; f.seed(state.seed); renderParams(); }
 function renderParams() {
-  const modeBtn = `<div class="prow" style="margin-bottom:12px"><select id="p-mode" class="mode-select" title="jump to a mode">${MODES.map((m) => `<option value="${m}"${m === mode ? ' selected' : ''}>${FIELD_LABEL[m]}</option>`).join('')}</select></div>`;
+  const modeBtn = pickerHTML('p-mode', 'type', FIELD_LABEL[mode], MODES.map((m) => ({ v: m, label: FIELD_LABEL[m] })), mode);
   const fld = activeField();
   if (fld) {
     const pr = fld.params;
@@ -423,12 +436,12 @@ function renderParams() {
       ? `<div class="prow-btns"><button id="p-mosh">datamosh: ${golMosh ? 'on' : 'off'}</button></div>` +
         (golMosh ? `<div class="prow"><label>mosh strength <b>${golMoshAmt.toFixed(2)}</b></label><input type="range" id="p-moshamt" min="0" max="2.5" step="0.01" value="${golMoshAmt}"></div>` : '')
       : '';
-    // type-specific preset selector (shown right under the type dropdown)
-    const ltPreset = mode === 'ltree' ? `<div class="prow-btns"><button id="p-preset">preset: ${fld.presetIndex >= 0 ? LTREE_PRESETS[fld.presetIndex].name : 'Custom'}</button></div>` : '';
-    const wfcExtra = mode === 'wfc' ? `<div class="prow-btns"><button id="p-style">tileset: ${WFC_STYLES[fld.style]}</button></div>` : '';
-    const leniaExtra = mode === 'lenia' ? `<div class="prow-btns"><button id="p-lpreset">preset: ${LENIA_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
-    const truchetExtra = mode === 'truchet' ? `<div class="prow-btns"><button id="p-tpreset">preset: ${TRUCHET_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
-    const physExtra = mode === 'physarum' ? `<div class="prow-btns"><button id="p-ppreset">preset: ${PHYSARUM_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
+    // type-specific preset picker (shown right under the type selector)
+    const ltPreset = mode === 'ltree' ? pickerHTML('p-preset', 'preset', fld.presetIndex >= 0 ? LTREE_PRESETS[fld.presetIndex].name : 'Custom', LTREE_PRESETS.map((p, i) => ({ v: i, label: p.name })), fld.presetIndex) : '';
+    const wfcExtra = mode === 'wfc' ? pickerHTML('p-style', 'preset', WFC_STYLES[fld.style], WFC_STYLES.map((s, i) => ({ v: i, label: s })), fld.style) : '';
+    const leniaExtra = mode === 'lenia' ? pickerHTML('p-lpreset', 'preset', LENIA_PRESETS[fld._presetIdx || 0].name, LENIA_PRESETS.map((p, i) => ({ v: i, label: p.name })), fld._presetIdx || 0) : '';
+    const truchetExtra = mode === 'truchet' ? pickerHTML('p-tpreset', 'preset', TRUCHET_PRESETS[fld._presetIdx || 0].name, TRUCHET_PRESETS.map((p, i) => ({ v: i, label: p.name })), fld._presetIdx || 0) : '';
+    const physExtra = mode === 'physarum' ? pickerHTML('p-ppreset', 'preset', PHYSARUM_PRESETS[fld._presetIdx || 0].name, PHYSARUM_PRESETS.map((p, i) => ({ v: i, label: p.name })), fld._presetIdx || 0) : '';
     const presetRow = leniaExtra + truchetExtra + physExtra + wfcExtra + ltPreset;
     const ltCustom = mode === 'ltree'
       ? `<div class="prow"><label>axiom</label><input id="lt-ax" type="text" value="${esc(fld.lsys.axiom)}" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit"></div>` +
@@ -452,36 +465,24 @@ function renderParams() {
       const ms = paramsEl.querySelector('#p-moshamt'); if (ms) ms.addEventListener('input', () => { golMoshAmt = +ms.value; });
     }
     if (mode === 'ltree') {
-      paramsEl.querySelector('#p-preset').addEventListener('click', () => { fld.setPreset((fld.presetIndex < 0 ? 0 : fld.presetIndex) + 1); renderParams(); });
+      wirePicker('p-preset', () => { fld.setPreset((fld.presetIndex < 0 ? 0 : fld.presetIndex) + 1); renderParams(); }, (v) => { fld.setPreset(+v); renderParams(); });
       paramsEl.querySelector('#lt-apply').addEventListener('click', () => { fld.applyCustom(document.getElementById('lt-ax').value, document.getElementById('lt-rules').value); renderParams(); });
     }
-    if (mode === 'wfc') paramsEl.querySelector('#p-style').addEventListener('click', () => { fld.setStyle(fld.style + 1); renderParams(); });
-    if (mode === 'lenia') paramsEl.querySelector('#p-lpreset').addEventListener('click', () => {
-      const i = ((fld._presetIdx || 0) + 1) % LENIA_PRESETS.length, P = LENIA_PRESETS[i];
-      fld._presetIdx = i; fld.params.mu = P.mu; fld.params.sigma = P.sigma; fld.params.dt = P.dt; fld.params.muK = P.muK; fld.params.sigK = P.sigK;
-      fld.seed0 = P.seed; fld.seed(P.seed); renderParams();
-    });
-    if (mode === 'truchet') paramsEl.querySelector('#p-tpreset').addEventListener('click', () => {
-      const i = ((fld._presetIdx || 0) + 1) % TRUCHET_PRESETS.length, P = TRUCHET_PRESETS[i];
-      fld._presetIdx = i; fld.params.scale = P.scale; fld.params.width = P.width; fld.params.curve = P.curve; fld.params.speed = P.speed; fld.params.contrast = P.contrast;
-      renderParams();
-    });
-    if (mode === 'physarum') paramsEl.querySelector('#p-ppreset').addEventListener('click', () => {
-      const i = ((fld._presetIdx || 0) + 1) % PHYSARUM_PRESETS.length, P = PHYSARUM_PRESETS[i];
-      fld._presetIdx = i; fld.params.sensorAngle = P.sensorAngle; fld.params.sensorDist = P.sensorDist; fld.params.turn = P.turn; fld.params.step = P.step; fld.params.decay = P.decay;
-      fld.seed(state.seed); renderParams();
-    });
+    if (mode === 'wfc') wirePicker('p-style', () => { fld.setStyle(fld.style + 1); renderParams(); }, (v) => { fld.setStyle(+v); renderParams(); });
+    if (mode === 'lenia') wirePicker('p-lpreset', () => applyLenia((fld._presetIdx || 0) + 1), (v) => applyLenia(+v));
+    if (mode === 'truchet') wirePicker('p-tpreset', () => applyTruchet((fld._presetIdx || 0) + 1), (v) => applyTruchet(+v));
+    if (mode === 'physarum') wirePicker('p-ppreset', () => applyPhysarum((fld._presetIdx || 0) + 1), (v) => applyPhysarum(+v));
   } else {
     const L = LAYERS[selLayer], p = PARAMS[selLayer];
-    const layerSel = `<div class="prow" style="margin-bottom:8px"><select id="p-layer" class="mode-select" style="font-size:12px;text-transform:none;letter-spacing:.04em">${LAYERS.map((l, i) => `<option value="${i}"${i === selLayer ? ' selected' : ''}>${String(i).padStart(2, '0')} · ${l.name}</option>`).join('')}</select></div>`;
+    const layerSel = pickerHTML('p-layer', '', `${String(selLayer).padStart(2, '0')} · ${L.name}`, LAYERS.map((l, i) => ({ v: i, label: `${String(i).padStart(2, '0')} · ${l.name}` })), selLayer);
     paramsEl.innerHTML = modeBtn + layerSel + `<div class="pbody"><div class="psub" style="margin-top:2px">growth: ${L.grow} · drag to tune</div>` +
       PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-export">export</button></div></div>`;
     wireLocks();
-    paramsEl.querySelector('#p-layer').addEventListener('change', (e) => { selLayer = +e.target.value; renderParams(); });
+    wirePicker('p-layer', () => { selLayer = (selLayer + 1) % LAYERS.length; renderParams(); }, (v) => { selLayer = +v; renderParams(); });
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => inp.addEventListener('input', () => { p[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(3); buildFlats(); }));
     paramsEl.querySelector('#p-export').addEventListener('click', () => { const j = JSON.stringify(PARAMS, null, 2); if (navigator.clipboard) navigator.clipboard.writeText(j).catch(() => {}); console.log('bloom params (copied):\n' + j); });
   }
-  paramsEl.querySelector('#p-mode').addEventListener('change', (e) => switchMode(e.target.value));
+  wirePicker('p-mode', () => switchMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]), (v) => switchMode(v));
 }
 
 // ---- shareable config via URL (?c=<base64 json>) -------------------------
