@@ -13,7 +13,7 @@
 //  layer's reveal later; this view is the stacked, lagged, per-layer model.)
 // ---------------------------------------------------------------------------
 
-import { FieldSim } from './fields.js';
+import { FieldSim, LENIA_PRESETS } from './fields.js';
 import { Physarum } from './physarum.js';
 import { LTree, LTREE_PRESETS } from './ltree.js';
 import { WFC, WFC_STYLES } from './wfc.js';
@@ -381,8 +381,9 @@ function renderParams() {
         `<div class="prow-btns"><button id="lt-apply">apply custom</button></div>`
       : '';
     const wfcExtra = mode === 'wfc' ? `<div class="prow-btns"><button id="p-style">tileset: ${WFC_STYLES[fld.style]}</button></div>` : '';
+    const leniaExtra = mode === 'lenia' ? `<div class="prow-btns"><button id="p-lpreset">preset: ${LENIA_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
     paramsEl.innerHTML = modeBtn + `<div class="psub" style="margin-top:-4px">${mode === 'grayscott' ? 'reaction–diffusion' : mode === 'truchet' ? 'tiling' : mode === 'ltree' ? 'L-system' : mode === 'wfc' ? 'wave function collapse' : mode === 'epicycles' ? 'fourier · pendulums' : mode === 'physarum' ? 'agent slime mold' : 'continuous CA · living field'}</div>` +
-      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltExtra + wfcExtra + `<div class="prow-btns"><button id="p-reseed">reseed</button></div>`;
+      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltExtra + wfcExtra + leniaExtra + `<div class="prow-btns"><button id="p-reseed">reseed</button></div>`;
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => {
       inp.addEventListener('input', () => { if (inp.dataset.k) pr[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(inp.dataset.k ? 3 : 2); });
       if (mode === 'ltree' && inp.dataset.k) inp.addEventListener('change', () => fld.seed(state.seed));   // regenerate on release
@@ -397,6 +398,11 @@ function renderParams() {
       paramsEl.querySelector('#lt-apply').addEventListener('click', () => { fld.applyCustom(document.getElementById('lt-ax').value, document.getElementById('lt-rules').value); renderParams(); });
     }
     if (mode === 'wfc') paramsEl.querySelector('#p-style').addEventListener('click', () => { fld.setStyle(fld.style + 1); renderParams(); });
+    if (mode === 'lenia') paramsEl.querySelector('#p-lpreset').addEventListener('click', () => {
+      const i = ((fld._presetIdx || 0) + 1) % LENIA_PRESETS.length, P = LENIA_PRESETS[i];
+      fld._presetIdx = i; fld.params.mu = P.mu; fld.params.sigma = P.sigma; fld.params.dt = P.dt; fld.params.muK = P.muK; fld.params.sigK = P.sigK;
+      fld.seed0 = P.seed; fld.seed(P.seed); renderParams();
+    });
   } else {
     const L = LAYERS[selLayer], p = PARAMS[selLayer];
     paramsEl.innerHTML = modeBtn + `<h2>${String(selLayer).padStart(2, '0')} · ${L.name}</h2><div class="psub">growth: ${L.grow} · click a layer · drag to tune</div>` +

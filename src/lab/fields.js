@@ -141,6 +141,19 @@ const DEFAULTS = {
   truchet:    { scale: 15.495, width: 0.111, curve: 1.0, speed: 1.780, contrast: 0.690 },
   gameoflife: { sLo: 1.64, sHi: 3, bLo: 3, bHi: 3 },
 };
+// Lenia parameter presets — μ/σ regimes from Bert Chan's bestiary (R=13, bump
+// kernel ≈ our single Gaussian shell), each with a hand-picked seed. From a
+// random soup these give distinct living behaviours rather than exact creatures.
+export const LENIA_PRESETS = [
+  { name: 'Nucleus',    mu: 0.245, sigma: 0.021, dt: 0.068, muK: 0.372, sigK: 0.170, seed: 0x1f65 },
+  { name: 'Orbium',     mu: 0.150, sigma: 0.017, dt: 0.100, muK: 0.50, sigK: 0.150, seed: 0x0a11 },
+  { name: 'Cells',      mu: 0.290, sigma: 0.043, dt: 0.100, muK: 0.50, sigK: 0.150, seed: 0x33c1 },
+  { name: 'Coral',      mu: 0.260, sigma: 0.038, dt: 0.100, muK: 0.50, sigK: 0.150, seed: 0x77b2 },
+  { name: 'Worms',      mu: 0.330, sigma: 0.049, dt: 0.150, muK: 0.50, sigK: 0.150, seed: 0x1234 },
+  { name: 'Turbulence', mu: 0.310, sigma: 0.052, dt: 0.120, muK: 0.50, sigK: 0.160, seed: 0x9d2f },
+  { name: 'Amoeba',     mu: 0.300, sigma: 0.058, dt: 0.130, muK: 0.50, sigK: 0.160, seed: 0x5a0e },
+  { name: 'Membrane',   mu: 0.220, sigma: 0.034, dt: 0.100, muK: 0.46, sigK: 0.160, seed: 0xb4d1 },
+];
 export const FIELD_DEFS = {
   lenia: [
     { key: 'mu', min: 0.05, max: 0.35, label: 'growth μ' }, { key: 'sigma', min: 0.005, max: 0.06, label: 'growth σ' },
