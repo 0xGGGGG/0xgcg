@@ -388,6 +388,7 @@ function renderParams() {
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => {
       inp.addEventListener('input', () => { if (inp.dataset.k) pr[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(inp.dataset.k ? 3 : 2); });
       if (mode === 'ltree' && inp.dataset.k) inp.addEventListener('change', () => fld.seed(state.seed));   // regenerate on release
+      if (mode === 'epicycles' && (inp.dataset.k === 'shape' || inp.dataset.k === 'tiles')) inp.addEventListener('change', () => fld.seed(state.seed));
     });
     paramsEl.querySelector('#p-reseed').addEventListener('click', () => fld.seed(state.seed));
     if (mode === 'gameoflife') {
