@@ -348,7 +348,17 @@ const cVal = document.getElementById('c-val'), dimVal = document.getElementById(
 const scrub = document.getElementById('scrub'), bPlay = document.getElementById('b-play'), bSeed = document.getElementById('b-seed');
 const bShare = document.getElementById('b-share'), bReset = document.getElementById('b-reset'), bCollapse = document.getElementById('b-collapse'), paramsPanel = document.getElementById('params');
 const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rolling
-function setPlay(on) { state.playing = on; bPlay.textContent = on ? '❚❚' : '▶'; bPlay.title = on ? 'pause' : 'play'; }
+// ---- action icons (inline SVG) ----
+const _svg = (w, inner, fill) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="${fill || 'none'}" stroke="${fill ? 'none' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const ICON_PLAY = _svg(15, '<path d="M7 4l13 8-13 8z"/>', 'currentColor');
+const ICON_PAUSE = _svg(15, '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>', 'currentColor');
+const ICON_RESET = _svg(16, '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>');
+const ICON_DICE = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor" stroke="none"/></svg>`;
+const ICON_SHARE = _svg(15, '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/>');
+const ICON_CHECK = _svg(15, '<polyline points="20 6 9 17 4 12"/>');
+const ICON_EXPAND = _svg(15, '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>');
+const ICON_SHRINK = _svg(15, '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>');
+function setPlay(on) { state.playing = on; bPlay.innerHTML = on ? ICON_PAUSE : ICON_PLAY; bPlay.title = on ? 'pause' : 'play'; }
 function resetParams() {                                 // ⟲ reset: params back to this mode's defaults
   const f = activeField();
   if (f) {
@@ -374,14 +384,17 @@ function roll() {                                                               
   for (const d of defs) { if (locks[mode + ':' + d.key]) continue; params[d.key] = d.min + Math.random() * (d.max - d.min); }
   reseed(); if (f) f.seed(state.seed); else buildFlats(); renderParams();
 }
-const setCollapseIcon = () => { bCollapse.textContent = paramsPanel.classList.contains('collapsed') ? '⌄' : '⌃'; };   // caret down = expand, up = collapse
+const setCollapseIcon = () => { bCollapse.innerHTML = paramsPanel.classList.contains('collapsed') ? ICON_EXPAND : ICON_SHRINK; };
+bReset.innerHTML = ICON_RESET + '<span>reset</span>';
+bSeed.innerHTML = ICON_DICE + '<span>roll</span>';
+bShare.innerHTML = ICON_SHARE;
 bPlay.addEventListener('click', () => setPlay(!state.playing));
 bSeed.addEventListener('click', roll);
 bReset.addEventListener('click', resetParams);
 bShare.addEventListener('click', shareLink);
 bCollapse.addEventListener('click', () => { paramsPanel.classList.toggle('collapsed'); setCollapseIcon(); });
 if (innerWidth <= 720) paramsPanel.classList.add('collapsed');   // mobile: start collapsed
-setCollapseIcon();
+setPlay(state.playing); setCollapseIcon();
 scrub.addEventListener('input', () => { state.c = +scrub.value / 1000; setPlay(false); });
 seedVal.addEventListener('change', () => { const v = parseInt(seedVal.value, 16); if (isFinite(v)) { state.seed = v; const f = activeField(); if (f) f.seed(v); } showSeed(); });
 seedVal.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') seedVal.blur(); });
@@ -422,8 +435,8 @@ function renderParams() {
         `<div class="prow"><label>rules · one per line (F=FF+[+F-F])</label><textarea id="lt-rules" rows="3" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit;resize:vertical">${esc(fld.lsys.rules)}</textarea></div>` +
         `<div class="prow-btns"><button id="lt-apply">apply custom</button></div>`
       : '';
-    paramsEl.innerHTML = modeBtn + presetRow + `<div class="psub" style="margin-top:2px">${mode === 'grayscott' ? 'reaction–diffusion' : mode === 'truchet' ? 'tiling' : mode === 'ltree' ? 'L-system' : mode === 'wfc' ? 'wave function collapse' : mode === 'epicycles' ? 'fourier · pendulums' : mode === 'physarum' ? 'agent slime mold' : 'continuous CA · living field'}</div>` +
-      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltCustom;
+    paramsEl.innerHTML = modeBtn + presetRow + `<div class="pbody"><div class="psub" style="margin-top:2px">${mode === 'grayscott' ? 'reaction–diffusion' : mode === 'truchet' ? 'tiling' : mode === 'ltree' ? 'L-system' : mode === 'wfc' ? 'wave function collapse' : mode === 'epicycles' ? 'fourier · pendulums' : mode === 'physarum' ? 'agent slime mold' : 'continuous CA · living field'}</div>` +
+      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltCustom + `</div>`;
     wireLocks();
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => {
       inp.addEventListener('input', () => {
@@ -461,8 +474,8 @@ function renderParams() {
   } else {
     const L = LAYERS[selLayer], p = PARAMS[selLayer];
     const layerSel = `<div class="prow" style="margin-bottom:8px"><select id="p-layer" class="mode-select" style="font-size:12px;text-transform:none;letter-spacing:.04em">${LAYERS.map((l, i) => `<option value="${i}"${i === selLayer ? ' selected' : ''}>${String(i).padStart(2, '0')} · ${l.name}</option>`).join('')}</select></div>`;
-    paramsEl.innerHTML = modeBtn + layerSel + `<div class="psub" style="margin-top:2px">growth: ${L.grow} · drag to tune</div>` +
-      PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-export">export</button></div>`;
+    paramsEl.innerHTML = modeBtn + layerSel + `<div class="pbody"><div class="psub" style="margin-top:2px">growth: ${L.grow} · drag to tune</div>` +
+      PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-export">export</button></div></div>`;
     wireLocks();
     paramsEl.querySelector('#p-layer').addEventListener('change', (e) => { selLayer = +e.target.value; renderParams(); });
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => inp.addEventListener('input', () => { p[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(3); buildFlats(); }));
@@ -485,7 +498,7 @@ function encodeConfig() {
 }
 function shareLink() {
   const url = `${location.origin}/sandbox/${MODE_SLUG[mode]}?c=${encodeConfig()}`;
-  const done = () => { bShare.textContent = 'copied ✓'; setTimeout(() => { bShare.textContent = 'share ⧉'; }, 1400); };
+  const done = () => { bShare.innerHTML = ICON_CHECK; setTimeout(() => { bShare.innerHTML = ICON_SHARE; }, 1400); };
   if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, () => prompt('copy link', url)); else prompt('copy link', url);
 }
 function applyConfig(b64) {

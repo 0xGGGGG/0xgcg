@@ -67,8 +67,10 @@
     /* transport merged into the params panel */
     #transport { padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,.1); }
     #transport .row { display:flex; gap:6px; margin-bottom:8px; }
-    #transport button { flex:1; padding:6px 4px; cursor:pointer; color:var(--fg);
-      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14); border-radius:5px; font:inherit; letter-spacing:.04em; }
+    #transport button { flex:1; padding:7px 4px; cursor:pointer; color:var(--fg);
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14); border-radius:5px; font:inherit; letter-spacing:.04em;
+      display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+    #transport button svg { display:block; flex:0 0 auto; }
     #transport button:hover { border-color:var(--acc); color:#fff; }
     #transport label { display:block; color:var(--dim); margin:6px 0 2px; letter-spacing:.05em; }
     #transport input[type=range] { width:100%; accent-color:var(--acc); }
@@ -76,19 +78,16 @@
     #seed-val { width:56px; font:inherit; color:#fff; background:rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.16); border-radius:4px; padding:2px 5px; letter-spacing:.05em; }
     #seed-val:focus { outline:none; border-color:var(--acc); }
-    #b-share { margin-left:auto; flex:0 0 auto; padding:3px 8px; cursor:pointer; color:var(--acc);
-      background:rgba(39,224,160,.08); border:1px solid rgba(39,224,160,.3); border-radius:5px; font:inherit; }
-    #b-share:hover { color:#fff; border-color:var(--acc); }
+    #b-share, #b-collapse { flex:0 0 auto !important; width:38px; }
+    #b-share { color:var(--acc); }
     /* per-param lock */
     #params-body .prow label { align-items:center; }
     .plock { cursor:pointer; margin-right:5px; opacity:.5; font-size:11px; user-select:none; }
     .plock.on { opacity:1; color:var(--acc); }
-    /* collapse/expand toggle lives in the action row */
-    #b-collapse { flex:0 0 auto !important; width:40px; display:inline-flex; align-items:center; justify-content:center; font-size:16px; line-height:1; }
-    /* collapsed: keep action bar + time/phase scrubber; hide seed/share + params */
-    #params.collapsed #params-body { display:none; }
+    /* collapse/expand + share are icon-only action buttons */
+    /* collapsed: keep action bar, time/phase, type + preset; hide sliders + seed/share */
+    #params.collapsed .pbody { display:none; }
     #params.collapsed .seedrow { display:none; }
-    #params.collapsed #transport { margin-bottom:0; padding-bottom:2px; border-bottom:none; }
     #ph-name { color:var(--acc); }
     /* mobile: params a scrollable bottom sheet, collapsed to just the action bar by default */
     @media (max-width:720px) {
@@ -104,13 +103,14 @@
     <div id="transport">
       <div class="row">
         <button id="b-play" title="play / pause">❚❚</button>
-        <button id="b-reset" title="reset params to defaults">⟲ reset</button>
-        <button id="b-seed" title="roll — randomise unlocked params + new seed">⚄ roll</button>
-        <button id="b-collapse" title="collapse / expand panel">⤡</button>
+        <button id="b-reset" title="reset params to defaults">reset</button>
+        <button id="b-seed" title="roll — randomise unlocked params + new seed">roll</button>
+        <button id="b-share" title="copy shareable link"></button>
+        <button id="b-collapse" title="collapse / expand panel"></button>
       </div>
       <label>cycle <span id="c-val"></span> · <b id="ph-name">INIT</b> <span id="ph-num" style="opacity:.6"></span></label>
       <input id="scrub" type="range" min="0" max="1000" value="0" />
-      <label class="seedrow">dimension <span id="dim-val">0</span> · seed <input id="seed-val" type="text" spellcheck="false" title="edit seed (hex) · Enter to apply"><button id="b-share" title="copy shareable link">share ⧉</button></label>
+      <label class="seedrow">dimension <span id="dim-val">0</span> · seed <input id="seed-val" type="text" spellcheck="false" title="edit seed (hex) · Enter to apply"></label>
     </div>
     <div id="params-body"></div>
   </div>
