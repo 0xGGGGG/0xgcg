@@ -17,6 +17,7 @@ export const LTREE_PRESETS = [
   { name: 'Frost',      axiom: 'F', rules: 'F=FF-[-F+F+F]+[+F-F-F]',              angle: 22,  iter: 3.22, sym: 1.68, jitter: 0.148, thick: 0.5 },
   { name: 'Pinwheel',   axiom: 'F', rules: 'F=FF-[-F+F+F]+[+F-F-F]',              angle: 21.675, iter: 2.29, sym: 4.04, jitter: 0.118, thick: 1.265 },
   { name: 'Vessel',     axiom: 'F', rules: 'F=F[+F]F[-F]F',                        angle: 90.1, iter: 3.79, sym: 2.56, jitter: 0.25, thick: 0.725 },
+  { name: 'Fan',        axiom: 'X', rules: 'X=F+[[X]-X]-F[-FX]+X+\nF=FF',          angle: 44.1, iter: 4.84, sym: 1.76, jitter: 0, thick: 1.153 },
   { name: 'Koch',       axiom: 'F', rules: 'F=F+F-F-F+F',                          angle: 90,  iter: 3, sym: 1 },
   { name: 'Koch Island',axiom: 'F+F+F+F', rules: 'F=F+F-F-FF+F+F-F',              angle: 90,  iter: 2, sym: 1 },
   { name: 'Dragon',     axiom: 'FX',rules: 'X=X+YF+\nY=-FX-Y',                     angle: 90,  iter: 11, sym: 1 },
