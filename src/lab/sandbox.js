@@ -13,7 +13,7 @@
 //  layer's reveal later; this view is the stacked, lagged, per-layer model.)
 // ---------------------------------------------------------------------------
 
-import { FieldSim, LENIA_PRESETS } from './fields.js';
+import { FieldSim, LENIA_PRESETS, TRUCHET_PRESETS } from './fields.js';
 import { Physarum } from './physarum.js';
 import { LTree, LTREE_PRESETS } from './ltree.js';
 import { WFC, WFC_STYLES } from './wfc.js';
@@ -382,8 +382,9 @@ function renderParams() {
       : '';
     const wfcExtra = mode === 'wfc' ? `<div class="prow-btns"><button id="p-style">tileset: ${WFC_STYLES[fld.style]}</button></div>` : '';
     const leniaExtra = mode === 'lenia' ? `<div class="prow-btns"><button id="p-lpreset">preset: ${LENIA_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
+    const truchetExtra = mode === 'truchet' ? `<div class="prow-btns"><button id="p-tpreset">preset: ${TRUCHET_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
     paramsEl.innerHTML = modeBtn + `<div class="psub" style="margin-top:-4px">${mode === 'grayscott' ? 'reaction–diffusion' : mode === 'truchet' ? 'tiling' : mode === 'ltree' ? 'L-system' : mode === 'wfc' ? 'wave function collapse' : mode === 'epicycles' ? 'fourier · pendulums' : mode === 'physarum' ? 'agent slime mold' : 'continuous CA · living field'}</div>` +
-      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltExtra + wfcExtra + leniaExtra + `<div class="prow-btns"><button id="p-reseed">reseed</button></div>`;
+      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltExtra + wfcExtra + leniaExtra + truchetExtra + `<div class="prow-btns"><button id="p-reseed">reseed</button></div>`;
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => {
       inp.addEventListener('input', () => { if (inp.dataset.k) pr[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(inp.dataset.k ? 3 : 2); });
       if (mode === 'ltree' && inp.dataset.k) inp.addEventListener('change', () => fld.seed(state.seed));   // regenerate on release
@@ -402,6 +403,11 @@ function renderParams() {
       const i = ((fld._presetIdx || 0) + 1) % LENIA_PRESETS.length, P = LENIA_PRESETS[i];
       fld._presetIdx = i; fld.params.mu = P.mu; fld.params.sigma = P.sigma; fld.params.dt = P.dt; fld.params.muK = P.muK; fld.params.sigK = P.sigK;
       fld.seed0 = P.seed; fld.seed(P.seed); renderParams();
+    });
+    if (mode === 'truchet') paramsEl.querySelector('#p-tpreset').addEventListener('click', () => {
+      const i = ((fld._presetIdx || 0) + 1) % TRUCHET_PRESETS.length, P = TRUCHET_PRESETS[i];
+      fld._presetIdx = i; fld.params.scale = P.scale; fld.params.width = P.width; fld.params.curve = P.curve; fld.params.speed = P.speed; fld.params.contrast = P.contrast;
+      renderParams();
     });
   } else {
     const L = LAYERS[selLayer], p = PARAMS[selLayer];

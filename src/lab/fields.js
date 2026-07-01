@@ -154,6 +154,10 @@ export const LENIA_PRESETS = [
   { name: 'Amoeba',     mu: 0.300, sigma: 0.058, dt: 0.130, muK: 0.50, sigK: 0.160, seed: 0x5a0e },
   { name: 'Membrane',   mu: 0.220, sigma: 0.034, dt: 0.100, muK: 0.46, sigK: 0.160, seed: 0xb4d1 },
 ];
+export const TRUCHET_PRESETS = [
+  { name: 'Arcs',  scale: 15.495, width: 0.111, curve: 1.0, speed: 1.780, contrast: 0.690 },
+  { name: 'Pipes', scale: 15.495, width: 0.111, curve: 0.0, speed: 1.780, contrast: 0.940 },
+];
 export const FIELD_DEFS = {
   lenia: [
     { key: 'mu', min: 0.05, max: 0.35, label: 'growth μ' }, { key: 'sigma', min: 0.005, max: 0.06, label: 'growth σ' },
