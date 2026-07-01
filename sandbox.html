@@ -64,10 +64,45 @@
     .mode-select:hover { border-color:rgba(39,224,160,.75); background-color:rgba(39,224,160,.16); }
     .mode-select:focus { outline:none; border-color:var(--acc); box-shadow:0 0 12px rgba(39,224,160,.3); }
     .mode-select option { background:#0a1310; color:#cfe0d8; font-size:13px; letter-spacing:normal; text-transform:none; }
+    /* transport merged into the params panel */
+    #transport { padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,.1); }
+    #transport .row { display:flex; gap:6px; margin-bottom:8px; }
+    #transport button { flex:1; padding:6px 4px; cursor:pointer; color:var(--fg);
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14); border-radius:5px; font:inherit; letter-spacing:.04em; }
+    #transport button:hover { border-color:var(--acc); color:#fff; }
+    #transport label { display:block; color:var(--dim); margin:6px 0 2px; letter-spacing:.05em; }
+    #transport input[type=range] { width:100%; accent-color:var(--acc); }
+    #transport .seedrow { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+    #seed-val { width:56px; font:inherit; color:#fff; background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.16); border-radius:4px; padding:2px 5px; letter-spacing:.05em; }
+    #seed-val:focus { outline:none; border-color:var(--acc); }
+    #b-share { margin-left:auto; flex:0 0 auto; padding:3px 8px; cursor:pointer; color:var(--acc);
+      background:rgba(39,224,160,.08); border:1px solid rgba(39,224,160,.3); border-radius:5px; font:inherit; }
+    #b-share:hover { color:#fff; border-color:var(--acc); }
+    /* per-param lock */
+    #params-body .prow label { align-items:center; }
+    .plock { cursor:pointer; margin-right:5px; opacity:.5; font-size:11px; user-select:none; }
+    .plock.on { opacity:1; color:var(--acc); }
+    /* show/hide toggle */
+    #ui-toggle { position:fixed; left:16px; top:16px; z-index:6; width:38px; height:38px; cursor:pointer;
+      font-size:17px; color:var(--acc); background:rgba(4,6,10,.72); border:1px solid rgba(39,224,160,.35);
+      border-radius:8px; backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; }
+    #ui-toggle:hover { border-color:var(--acc); color:#fff; }
+    #panel { top:64px; }
+    body.panels-hidden #panel, body.panels-hidden #params { display:none; }
+    /* mobile: single scrollable bottom sheet, legend hidden, collapsed by default */
+    @media (max-width:720px) {
+      #panel { display:none; }
+      #params { left:8px; right:8px; width:auto; top:auto; bottom:8px; max-height:62vh; }
+      #ui-toggle { width:44px; height:44px; font-size:20px; }
+      .hint { font-size:10px; left:8px; right:auto; bottom:6px; }
+    }
   </style>
 </head>
 <body>
   <canvas id="c"></canvas>
+
+  <button id="ui-toggle" title="show / hide panels" aria-label="toggle panels">☰</button>
 
   <div id="panel" class="hud">
     <h1>SANDBOX</h1>
@@ -76,19 +111,20 @@
     <ul class="legend" id="legend"></ul>
   </div>
 
-  <div id="ctl" class="hud">
-    <div class="row">
-      <button id="b-play">❚❚ pause</button>
-      <button id="b-seed">⟳ seed</button>
+  <div id="params" class="hud">
+    <div id="transport">
+      <div class="row">
+        <button id="b-play">❚❚ pause</button>
+        <button id="b-seed">⟳ seed</button>
+      </div>
+      <label>cycle <span id="c-val"></span></label>
+      <input id="scrub" type="range" min="0" max="1000" value="0" />
+      <label class="seedrow">dimension <span id="dim-val">0</span> · seed <input id="seed-val" type="text" spellcheck="false" title="edit seed (hex) · Enter to apply"><button id="b-share" title="copy shareable link">share ⧉</button></label>
     </div>
-    <label>cycle <span id="c-val"></span></label>
-    <input id="scrub" type="range" min="0" max="1000" value="0" />
-    <label>dimension <span id="dim-val">0</span> · seed <span id="seed-val">—</span></label>
+    <div id="params-body"></div>
   </div>
 
-  <div id="params" class="hud"></div>
-
-  <div class="hint">space play · r reseed · click a layer to tune · <a class="back" href="/">← 0xGCG</a></div>
+  <div class="hint">space play · r roll · ☰ toggle · <a class="back" href="/">← 0xGCG</a></div>
 
   <script type="module" src="/src/lab/sandbox.js"></script>
 </body>

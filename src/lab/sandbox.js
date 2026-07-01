@@ -345,13 +345,27 @@ const legendLis = [...legend.querySelectorAll('li')];
 const phName = document.getElementById('ph-name'), phNum = document.getElementById('ph-num');
 const cVal = document.getElementById('c-val'), dimVal = document.getElementById('dim-val'), seedVal = document.getElementById('seed-val');
 const scrub = document.getElementById('scrub'), bPlay = document.getElementById('b-play'), bSeed = document.getElementById('b-seed');
+const bShare = document.getElementById('b-share'), uiToggle = document.getElementById('ui-toggle');
+const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rolling
 function setPlay(on) { state.playing = on; bPlay.textContent = on ? '❚❚ pause' : '▶ play'; }
-function reseed() { state.seed = Math.floor(Math.random() * 1e4); seedVal.textContent = state.seed.toString(16).padStart(4, '0'); }
+function showSeed() { if (document.activeElement !== seedVal) seedVal.value = state.seed.toString(16).padStart(4, '0'); }
+function reseed() { state.seed = Math.floor(Math.random() * 1e4); showSeed(); }         // new seed number only (loop uses this)
+function seedNow() { reseed(); const f = activeField(); if (f) f.seed(state.seed); }     // ⟳ seed button: also re-roll the field
+function roll() {                                                                        // randomise UNLOCKED params + new seed
+  const f = activeField(), defs = f ? f.defs : PARAM_DEFS, params = f ? f.params : PARAMS[selLayer];
+  for (const d of defs) { if (locks[mode + ':' + d.key]) continue; params[d.key] = d.min + Math.random() * (d.max - d.min); }
+  reseed(); if (f) f.seed(state.seed); else buildFlats(); renderParams();
+}
 bPlay.addEventListener('click', () => setPlay(!state.playing));
-bSeed.addEventListener('click', reseed);
+bSeed.addEventListener('click', seedNow);
+bShare.addEventListener('click', shareLink);
+uiToggle.addEventListener('click', () => document.body.classList.toggle('panels-hidden'));
+if (innerWidth <= 720) document.body.classList.add('panels-hidden');   // mobile: start collapsed
 scrub.addEventListener('input', () => { state.c = +scrub.value / 1000; setPlay(false); });
-addEventListener('keydown', (e) => { if (e.key === ' ') { e.preventDefault(); setPlay(!state.playing); } else if (e.key.toLowerCase() === 'r') reseed(); });
-seedVal.textContent = state.seed.toString(16).padStart(4, '0');
+seedVal.addEventListener('change', () => { const v = parseInt(seedVal.value, 16); if (isFinite(v)) { state.seed = v; const f = activeField(); if (f) f.seed(v); } showSeed(); });
+seedVal.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') seedVal.blur(); });
+addEventListener('keydown', (e) => { if (/^(input|textarea|select)$/i.test(e.target.tagName)) return; if (e.key === ' ') { e.preventDefault(); setPlay(!state.playing); } else if (e.key.toLowerCase() === 'r') roll(); });
+showSeed();
 function updateHud(c) {
   const pid = Math.min(5, Math.floor(phaseOf(c)));
   phName.textContent = PHASES[pid]; phNum.textContent = `${pid} / 5`;
@@ -361,9 +375,10 @@ function updateHud(c) {
 }
 
 // ---- per-layer tuning panel ----------------------------------------------
-const paramsEl = document.getElementById('params');
+const paramsEl = document.getElementById('params-body');
 let selLayer = 3;
-const slider = (d, p) => { const v = p[d.key], step = (d.max - d.min) / 200; return `<div class="prow"><label>${d.label} <b>${(+v).toFixed(3)}</b></label><input type="range" data-k="${d.key}" min="${d.min}" max="${d.max}" step="${step}" value="${v}"></div>`; };
+const slider = (d, p) => { const v = p[d.key], step = (d.max - d.min) / 200, lk = locks[mode + ':' + d.key]; return `<div class="prow"><label><span class="plock${lk ? ' on' : ''}" data-lock="${d.key}" title="lock — keep on roll">${lk ? '🔒' : '🔓'}</span>${d.label} <b>${(+v).toFixed(3)}</b></label><input type="range" data-k="${d.key}" min="${d.min}" max="${d.max}" step="${step}" value="${v}"></div>`; };
+function wireLocks() { paramsEl.querySelectorAll('.plock').forEach((el) => el.addEventListener('click', () => { const k = mode + ':' + el.dataset.lock; locks[k] = !locks[k]; el.classList.toggle('on', locks[k]); el.textContent = locks[k] ? '🔒' : '🔓'; })); }
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 function renderParams() {
   const modeBtn = `<div class="prow" style="margin-bottom:12px"><select id="p-mode" class="mode-select" title="jump to a mode">${MODES.map((m) => `<option value="${m}"${m === mode ? ' selected' : ''}>${FIELD_LABEL[m]}</option>`).join('')}</select></div>`;
@@ -374,23 +389,26 @@ function renderParams() {
       ? `<div class="prow-btns"><button id="p-mosh">datamosh: ${golMosh ? 'on' : 'off'}</button></div>` +
         (golMosh ? `<div class="prow"><label>mosh strength <b>${golMoshAmt.toFixed(2)}</b></label><input type="range" id="p-moshamt" min="0" max="2.5" step="0.01" value="${golMoshAmt}"></div>` : '')
       : '';
-    const ltExtra = mode === 'ltree'
-      ? `<div class="prow-btns"><button id="p-preset">preset: ${fld.presetIndex >= 0 ? LTREE_PRESETS[fld.presetIndex].name : 'Custom'}</button></div>` +
-        `<div class="prow"><label>axiom</label><input id="lt-ax" type="text" value="${esc(fld.lsys.axiom)}" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit"></div>` +
-        `<div class="prow"><label>rules · one per line (F=FF+[+F-F])</label><textarea id="lt-rules" rows="3" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit;resize:vertical">${esc(fld.lsys.rules)}</textarea></div>` +
-        `<div class="prow-btns"><button id="lt-apply">apply custom</button></div>`
-      : '';
+    // type-specific preset selector (shown right under the type dropdown)
+    const ltPreset = mode === 'ltree' ? `<div class="prow-btns"><button id="p-preset">preset: ${fld.presetIndex >= 0 ? LTREE_PRESETS[fld.presetIndex].name : 'Custom'}</button></div>` : '';
     const wfcExtra = mode === 'wfc' ? `<div class="prow-btns"><button id="p-style">tileset: ${WFC_STYLES[fld.style]}</button></div>` : '';
     const leniaExtra = mode === 'lenia' ? `<div class="prow-btns"><button id="p-lpreset">preset: ${LENIA_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
     const truchetExtra = mode === 'truchet' ? `<div class="prow-btns"><button id="p-tpreset">preset: ${TRUCHET_PRESETS[fld._presetIdx || 0].name}</button></div>` : '';
-    paramsEl.innerHTML = modeBtn + `<div class="psub" style="margin-top:-4px">${mode === 'grayscott' ? 'reaction–diffusion' : mode === 'truchet' ? 'tiling' : mode === 'ltree' ? 'L-system' : mode === 'wfc' ? 'wave function collapse' : mode === 'epicycles' ? 'fourier · pendulums' : mode === 'physarum' ? 'agent slime mold' : 'continuous CA · living field'}</div>` +
-      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltExtra + wfcExtra + leniaExtra + truchetExtra + `<div class="prow-btns"><button id="p-reseed">reseed</button></div>`;
+    const presetRow = leniaExtra + truchetExtra + wfcExtra + ltPreset;
+    const ltCustom = mode === 'ltree'
+      ? `<div class="prow"><label>axiom</label><input id="lt-ax" type="text" value="${esc(fld.lsys.axiom)}" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit"></div>` +
+        `<div class="prow"><label>rules · one per line (F=FF+[+F-F])</label><textarea id="lt-rules" rows="3" style="width:100%;background:rgba(255,255,255,.05);color:var(--fg);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:4px;font:inherit;resize:vertical">${esc(fld.lsys.rules)}</textarea></div>` +
+        `<div class="prow-btns"><button id="lt-apply">apply custom</button></div>`
+      : '';
+    paramsEl.innerHTML = modeBtn + presetRow + `<div class="psub" style="margin-top:2px">${mode === 'grayscott' ? 'reaction–diffusion' : mode === 'truchet' ? 'tiling' : mode === 'ltree' ? 'L-system' : mode === 'wfc' ? 'wave function collapse' : mode === 'epicycles' ? 'fourier · pendulums' : mode === 'physarum' ? 'agent slime mold' : 'continuous CA · living field'}</div>` +
+      fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltCustom + `<div class="prow-btns"><button id="p-roll">⚄ roll</button></div>`;
+    wireLocks();
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => {
       inp.addEventListener('input', () => { if (inp.dataset.k) pr[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(inp.dataset.k ? 3 : 2); });
       if (mode === 'ltree' && inp.dataset.k) inp.addEventListener('change', () => fld.seed(state.seed));   // regenerate on release
       if (mode === 'epicycles' && (inp.dataset.k === 'shape' || inp.dataset.k === 'tiles')) inp.addEventListener('change', () => fld.seed(state.seed));
     });
-    paramsEl.querySelector('#p-reseed').addEventListener('click', () => fld.seed(state.seed));
+    paramsEl.querySelector('#p-roll').addEventListener('click', roll);
     if (mode === 'gameoflife') {
       paramsEl.querySelector('#p-mosh').addEventListener('click', () => { golMosh = !golMosh; renderParams(); });
       const ms = paramsEl.querySelector('#p-moshamt'); if (ms) ms.addEventListener('input', () => { golMoshAmt = +ms.value; });
@@ -413,14 +431,51 @@ function renderParams() {
   } else {
     const L = LAYERS[selLayer], p = PARAMS[selLayer];
     paramsEl.innerHTML = modeBtn + `<h2>${String(selLayer).padStart(2, '0')} · ${L.name}</h2><div class="psub">growth: ${L.grow} · click a layer · drag to tune</div>` +
-      PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-reset">reset layer</button><button id="p-export">export</button></div>`;
+      PARAM_DEFS.map((d) => slider(d, p)).join('') + `<div class="prow-btns"><button id="p-roll">⚄ roll</button><button id="p-reset">reset</button><button id="p-export">export</button></div>`;
+    wireLocks();
+    paramsEl.querySelector('#p-roll').addEventListener('click', roll);
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => inp.addEventListener('input', () => { p[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(3); buildFlats(); }));
     paramsEl.querySelector('#p-reset').addEventListener('click', () => { PARAMS[selLayer] = { lag: selLayer * 0.075, seed: selLayer * 13.0, ...REVEAL_PRESET[L.grow] }; buildFlats(); renderParams(); });
     paramsEl.querySelector('#p-export').addEventListener('click', () => { const j = JSON.stringify(PARAMS, null, 2); if (navigator.clipboard) navigator.clipboard.writeText(j).catch(() => {}); console.log('bloom params (copied):\n' + j); });
   }
   paramsEl.querySelector('#p-mode').addEventListener('change', (e) => switchMode(e.target.value));
 }
+
+// ---- shareable config via URL (?c=<base64 json>) -------------------------
+function encodeConfig() {
+  const f = activeField(), cfg = { m: mode, s: state.seed };
+  if (f) {
+    cfg.p = { ...f.params };
+    if (mode === 'lenia' || mode === 'truchet') cfg.pi = f._presetIdx || 0;
+    else if (mode === 'wfc') cfg.st = f.style;
+    else if (mode === 'ltree') { cfg.pi = f.presetIndex; cfg.ls = { a: f.lsys.axiom, r: f.lsys.rules, d: f.lsys.draw }; }
+    else if (mode === 'gameoflife') { cfg.gm = golMosh ? 1 : 0; cfg.ga = golMoshAmt; }
+  } else { cfg.l = selLayer; cfg.p = { ...PARAMS[selLayer] }; }
+  return btoa(JSON.stringify(cfg));
+}
+function shareLink() {
+  const url = `${location.origin}/sandbox/${MODE_SLUG[mode]}?c=${encodeConfig()}`;
+  const done = () => { bShare.textContent = 'copied ✓'; setTimeout(() => { bShare.textContent = 'share ⧉'; }, 1400); };
+  if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, () => prompt('copy link', url)); else prompt('copy link', url);
+}
+function applyConfig(b64) {
+  let cfg; try { cfg = JSON.parse(atob(b64)); } catch { return; }
+  if (!cfg || !MODES.includes(cfg.m)) return;
+  mode = cfg.m; if (typeof cfg.s === 'number') state.seed = cfg.s; showSeed();
+  const f = activeField();
+  if (f) {
+    if (cfg.p) Object.assign(f.params, cfg.p);
+    if (mode === 'ltree' && cfg.ls) { f.lsys = { axiom: cfg.ls.a, rules: cfg.ls.r, draw: cfg.ls.d || 'FG' }; f.presetIndex = cfg.pi != null ? cfg.pi : -1; }
+    else if ((mode === 'lenia' || mode === 'truchet') && cfg.pi != null) f._presetIdx = cfg.pi;
+    if (mode === 'wfc' && cfg.st != null) f.style = cfg.st;
+    if (mode === 'gameoflife') { if (cfg.gm != null) golMosh = !!cfg.gm; if (cfg.ga != null) golMoshAmt = cfg.ga; }
+    f.seed(state.seed);
+  } else if (cfg.l != null) { selLayer = Math.max(0, Math.min(LAYERS.length - 1, cfg.l)); if (cfg.p) Object.assign(PARAMS[selLayer], cfg.p); buildFlats(); }
+}
+
 legendLis.forEach((li, i) => li.addEventListener('click', () => { selLayer = i; legendLis.forEach((x, k) => x.classList.toggle('sel', k === i)); if (!activeField()) renderParams(); }));
+const sharedCfg = new URLSearchParams(location.search).get('c');
+if (sharedCfg) applyConfig(sharedCfg);
 legendLis[selLayer].classList.add('sel');
 renderParams();
 try { history.replaceState(null, '', '/sandbox/' + MODE_SLUG[mode]); } catch {}   // canonical URL on load
