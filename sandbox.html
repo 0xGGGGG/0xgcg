@@ -85,11 +85,10 @@
     .plock.on { opacity:1; color:var(--acc); }
     /* collapse/expand toggle lives in the action row */
     #b-collapse { flex:0 0 auto !important; width:40px; display:inline-flex; align-items:center; justify-content:center; font-size:16px; line-height:1; }
-    /* collapsed: only the action row remains — hide the params + cycle/seed/share */
+    /* collapsed: keep action bar + time/phase scrubber; hide seed/share + params */
     #params.collapsed #params-body { display:none; }
-    #params.collapsed #transport > :not(.row) { display:none; }
-    #params.collapsed #transport { margin-bottom:0; padding-bottom:0; border-bottom:none; }
-    #params.collapsed .row { margin-bottom:0; }
+    #params.collapsed .seedrow { display:none; }
+    #params.collapsed #transport { margin-bottom:0; padding-bottom:2px; border-bottom:none; }
     #ph-name { color:var(--acc); }
     /* mobile: params a scrollable bottom sheet, collapsed to just the action bar by default */
     @media (max-width:720px) {
