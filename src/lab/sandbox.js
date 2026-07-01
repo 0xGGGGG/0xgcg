@@ -515,19 +515,25 @@ const SAVE_KEY = 'sandbox.presets';
 function loadSaves() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; } catch { return []; } }
 function writeSaves(saves) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(saves)); } catch (e) { /* quota / private mode */ } }
 function savePreset() {
-  const f = activeField(), label = MODE_SLUG[mode] + (f && mode === 'wfc' ? '·' + WFC_STYLES[f.style] : '') + ' · ' + state.seed.toString(16);
+  const f = activeField();
+  const detail = (f && mode === 'wfc') ? WFC_STYLES[f.style] + ' · ' : '';   // type shown by the group header
+  const label = detail + state.seed.toString(16);
   const saves = loadSaves();
   saves.push({ label, mode, seed: state.seed, cfg: encodeConfig(), ts: Date.now() });
   writeSaves(saves); refreshSaved(saves.length - 1);
   bSave.innerHTML = ICON_CHECK; bSave.title = 'saved · ' + saves.length + ' preset' + (saves.length === 1 ? '' : 's');
   setTimeout(() => { bSave.innerHTML = ICON_SAVE; bSave.title = 'save preset to this browser'; }, 1400);
 }
-// populate the loader dropdown (select `sel` index if given)
+// populate the loader dropdown, grouped by type (current mode first)
 function refreshSaved(sel = -1) {
   const saves = loadSaves();
   savedRow.classList.toggle('empty', saves.length === 0);
-  savedSel.innerHTML = `<option value="-1">load saved…</option>` + saves.map((s, i) => `<option value="${i}">${(s.label || s.mode || '?').replace(/</g, '')}</option>`).join('');
-  savedSel.value = String(sel);
+  const groups = {}; saves.forEach((s, i) => { const m = s.mode || '?'; (groups[m] = groups[m] || []).push({ s, i }); });
+  const order = Object.keys(groups).sort((a, b) => (a === mode ? -1 : b === mode ? 1 : a.localeCompare(b)));
+  const esc = (t) => String(t).replace(/</g, '');
+  let html = `<option value="-1">load saved…</option>`;
+  for (const m of order) html += `<optgroup label="${esc(FIELD_LABEL[m] || m)}">` + groups[m].map(({ s, i }) => `<option value="${i}">${esc(s.label || m)}</option>`).join('') + `</optgroup>`;
+  savedSel.innerHTML = html; savedSel.value = String(sel);
 }
 function loadSaved(i) {
   const s = loadSaves()[i]; if (!s) return;
