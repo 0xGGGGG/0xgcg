@@ -127,6 +127,7 @@ export class LTree {
     }
     this.drawn = end; this._upload();
   }
+  finish() { while (this.drawn < this.segs.length) this.step(); }   // draw the whole tree at once (live param edits)
   _upload() { const gl = this.gl; gl.bindTexture(gl.TEXTURE_2D, this.tex); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); }
   get texture() { return this.tex; }
 }

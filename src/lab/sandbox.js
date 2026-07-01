@@ -350,6 +350,8 @@ const locks = {};   // `${mode}:${key}` → true keeps a param fixed when rollin
 function setPlay(on) { state.playing = on; bPlay.textContent = on ? '❚❚ pause' : '▶ play'; }
 function showSeed() { if (document.activeElement !== seedVal) seedVal.value = state.seed.toString(16).padStart(4, '0'); }
 function reseed() { state.seed = Math.floor(Math.random() * 1e4); showSeed(); }         // new seed number only (loop uses this)
+let _liveRS = 0;                                                                         // throttle rebuilds to one per frame
+function liveReseed() { if (_liveRS) return; _liveRS = requestAnimationFrame(() => { _liveRS = 0; const f = activeField(); if (!f) return; f.seed(state.seed); if (f.finish) f.finish(); }); }
 function roll() {                                                                        // ⚄ roll: randomise UNLOCKED params + new seed
   const f = activeField(), defs = f ? f.defs : PARAM_DEFS, params = f ? f.params : PARAMS[selLayer];
   for (const d of defs) { if (locks[mode + ':' + d.key]) continue; params[d.key] = d.min + Math.random() * (d.max - d.min); }
@@ -403,9 +405,13 @@ function renderParams() {
       fld.defs.map((d) => slider(d, pr)).join('') + golBtn + ltCustom;
     wireLocks();
     paramsEl.querySelectorAll('input[type=range]').forEach((inp) => {
-      inp.addEventListener('input', () => { if (inp.dataset.k) pr[inp.dataset.k] = +inp.value; inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(inp.dataset.k ? 3 : 2); });
-      if (mode === 'ltree' && inp.dataset.k) inp.addEventListener('change', () => fld.seed(state.seed));   // regenerate on release
-      if (mode === 'epicycles' && (inp.dataset.k === 'shape' || inp.dataset.k === 'tiles')) inp.addEventListener('change', () => fld.seed(state.seed));
+      inp.addEventListener('input', () => {
+        const k = inp.dataset.k; if (k) pr[k] = +inp.value;
+        inp.closest('.prow').querySelector('b').textContent = (+inp.value).toFixed(k ? 3 : 2);
+        // structural modes must rebuild to reflect the change live (throttled per frame)
+        if (mode === 'ltree' || mode === 'wfc') liveReseed();
+        else if (mode === 'epicycles' && (k === 'shape' || k === 'tiles')) liveReseed();
+      });
     });
     if (mode === 'gameoflife') {
       paramsEl.querySelector('#p-mosh').addEventListener('click', () => { golMosh = !golMosh; renderParams(); });

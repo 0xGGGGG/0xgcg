@@ -178,6 +178,17 @@ export class WFC {
     for (let i = 0; i < N; i++) if (!this.done[i] && this._popcount(this.cell[i]) === 1) { this._drawCell(i); drew = true; }
     if (drew) this._upload();
   }
+  finish() {                                                // solve + draw fully in one call (live param edits)
+    let guard = 0;
+    while (this.solved !== true && guard++ < 6000) {
+      const i = this._observe(); if (i < 0) break;
+      this._propagate(i);
+      if (this.solved === 'contradiction') this.seed((this.s ^ 0x9e3779b9) >>> 0);
+    }
+    const N = this.G * this.G;
+    for (let i = 0; i < N; i++) if (!this.done[i] && this._popcount(this.cell[i]) === 1) this._drawCell(i);
+    this._upload();
+  }
   _upload() { const gl = this.gl; gl.bindTexture(gl.TEXTURE_2D, this.tex); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); }
   get texture() { return this.tex; }
 }
